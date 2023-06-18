@@ -21,11 +21,10 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database.
      */
     public function run(): void{
-        $output = new \Symfony\Component\Console\Output\ConsoleOutput();
         $locs = Location::factory()->count(20)->create();
         $sender = Sender::factory()->count(3)->create();
 
-        $uniqueEvents = EventsData::factory()->state(['unique'=>true])->count(20)->create();
+        $uniqueEvents = EventsData::factory()->count(20)->create();
 
         $locsSenders = new Collection();
         $timeEvents = new Collection();

@@ -28,8 +28,7 @@ class EventsDataFactory extends Factory
         }
         return [
             'type'=>$type,
-            'data'=>json_encode($data),
-            'unique'=>fake()->boolean()
+            'data'=>json_encode($data)
         ];
     }
 }

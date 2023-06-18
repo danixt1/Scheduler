@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->integer('type');
             $table->text('data')->nullable(false);
-            $table->boolean('unique');
             $table->timestamps();
         });
     }

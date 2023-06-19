@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Processors;
-use App\Classes\DataGetter;
+namespace App\Events;
+use App\Classes\CalendarEventGetter;
 
-class Reminder extends DataGetter{
+class Reminder extends CalendarEventGetter{
     private string $name;
     private string $desc;
 
@@ -14,7 +14,7 @@ class Reminder extends DataGetter{
     public function getData():array{
         return [
             'name'=>$this->name,
-            'desc'=>$this->desc
+            'description'=>$this->desc
         ];
     }
     public function action(): array{

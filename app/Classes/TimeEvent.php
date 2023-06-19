@@ -1,59 +1,103 @@
 <?php 
+
 namespace App\Classes;
 
-use App\Classes\DataGetter;
+use App\Classes\CalendarEventGetter;
 use DateTime;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-const DB_QUERY = 'SELECT te.id,s.name,te.date,ed.type as itemType,ed.data as data,s.id as locs FROM timeevents as te 
+
+const DB_QUERY = 'SELECT te.id,s.id as sender_id,l.id as location_id,ed.id as event_id,s.name,te.date,ed.type as eventType,ed.data as eventData,l.data as locData,ls.isFallback,l.type as locType FROM timeevents as te 
 INNER JOIN senders as s ON s.id = te.sender_id 
-JOIN eventsdatas as ed on ed.id = te.eventsdata_id WHERE te.date < ?;';
+INNER JOIN eventsdatas as ed on ed.id = te.eventsdata_id 
+INNER JOIN locsenders as ls ON s.id = ls.sender_id 
+INNER JOIN locations as l ON l.id = ls.location_id WHERE te.date < ?;';
 
 class TimeEvent{
-    private Sender $sender;
-    private DateTime $date;
-    private mixed $eventsdata;
-    private DataGetter $action;
+    private array $senderData;
+    private array $calendarEventData = [];
+    private string $date;
+    private array $fallbacks = [];
+    private array $locations = [];
+    private int $id;
+    public function __construct($first,private ActionProcessor $actPrc){
+        $this->id = $first->id;
+        $this->date = $first->date;
+        $this->calendarEventData = [
+            "id"=>$first->event_id,
+            "data"=>json_decode($first->eventData),
+            "type"=>$first->eventType
+        ];
+        $this->senderData = [
+            "id"=>$first->sender_id,
+            "name"=>$first->name,
+            "fallbacks"=>[],
+            "locations"=>[]
+        ];
+        $this->insert($first);
+        //id,sender_id,location_id,name,date,eventType,eventData,locData,isFallback,locType  
+    }
+    public function insert($data){
+        $location = [
+            "id"=>$data->location_id,
+            "data"=>json_decode($data->locData),
+            "type"=>$data->locType
+        ];
+        if($data->isFallback === 1){
+            $this->fallbacks[] = $location;
+        }else{
+            $this->locations[] = $location;
+        }
+    }
+    public function fire(){
+        $this->senderData["fallbacks"] = $this->fallbacks;
+        $this->senderData["locations"] = $this->locations;
+        //{act:delete,table:'a'},{act:update,table:'a'}
 
+        $calendarEvent =  CalendarEventGetter::create($this->calendarEventData["data"],$this->calendarEventData['type']);
+        $eventResult = $calendarEvent->getData();
+        $act = $calendarEvent->action();
+        $this->actPrc->action($act,["event"=>$this->id,"trigger"=>$this->calendarEventData["id"]]);
+    }
     public static function extractFromDb(){
         $act = new DateTime();
         $act = $act->modify('-1 minute');
+        
+        $results = 0;
         $success = 0;
         $failed = 0;
-        $events = DB::select(DB_QUERY,[$act->format(DB_DATETIME_PATTERN)]);
-        foreach( $events as $event){
-            try{
-                $timeEvent = new TimeEvent($event);
-                $timeEvent->fire();
-                $success++;
-            }catch(Exception $e){
-                if(get_class($e) === 'ErrorException'){
-                    throw $e;
-                }
-                Log::error('DB->timeevents[{id}] failed processing event,additional informations:{error}',
-                ['id'=>$event->id,'error'=>$e->getMessage()]);
-                $failed++;
-                continue;
-            };
-        }
-        return ['total'=>$success + $failed,'failed'=>$failed,'success'=>$success];
-    }
-    public function __construct(object $event){
-        $this->date = new DateTime($event->date);
-        $this->sender = new Sender($event->locs);
+        $exceptions = [];
 
-        $data= (gettype($event->data) === 'string')? json_decode($event->data) : $event->data;
-        if(!isset($data)){
-            throw new Exception('Invalid JSON format in property "data"');
-        };
-        $this->eventsdata = $event;
-        $this->action = DataGetter::create($data,$event->itemType);
+        $totEvents = 0;
+        $events = DB::select(DB_QUERY,[$act->format(DB_DATETIME_PATTERN)]);
+        $first = array_shift($events);
+
+        if(!isset($first)){
+            return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents];
+        }
+
+        $actionProcessor = new ActionProcessor(["event"=>"eventsdatas","trigger"=>"timeevents"]);
+        $timeEv = new TimeEvent($first,$actionProcessor);
+        $actTimed = $first->id;
+        $totEvents++;
+        foreach( $events as $event){
+            $results++;
+            if($event->id != $actTimed){
+                $totEvents++;
+            try{
+                    $timeEv->fire();
+            }catch(Exception $e){
+                $failed++;
+                    $exceptions[] = $e;
+        }
+                $timeEv = new TimeEvent($event,$actionProcessor);
+                $actTimed = $event->id;
+            }else{
+                $timeEv->insert($event);
     }
-    public function fire(){
-        $act = $this->action;
-        Log::info($act->action());
-        Log::info($act->getData());
+    }
+        $timeEv->fire();
+        return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents,"exceptions"=>$exceptions];
     }
 }
-?>

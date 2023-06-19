@@ -20,7 +20,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        define('DB_DATETIME_PATTERN',env('DB_DATETIME_PATTERN','Y-m-d H:i:s'));
+        if(!defined('DB_DATETIME_PATTERN'))
+            define('DB_DATETIME_PATTERN',env('DB_DATETIME_PATTERN','Y-m-d H:i:s'));
         Schema::defaultStringLength(500);
     }
 }

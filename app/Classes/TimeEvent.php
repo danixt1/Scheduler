@@ -21,22 +21,21 @@ class TimeEvent{
     private array $fallbacks = [];
     private array $locations = [];
     private int $id;
-    public function __construct($first,private ActionProcessor $actPrc){
-        $this->id = $first->id;
-        $this->date = $first->date;
+    public function __construct($firstRow){
+        $this->id = $firstRow->id;
+        $this->date = $firstRow->date;
         $this->calendarEventData = [
-            "id"=>$first->event_id,
-            "data"=>json_decode($first->eventData),
-            "type"=>$first->eventType
+            "id"=>$firstRow->event_id,
+            "data"=>json_decode($firstRow->eventData),
+            "type"=>$firstRow->eventType
         ];
         $this->senderData = [
-            "id"=>$first->sender_id,
-            "name"=>$first->name,
+            "id"=>$firstRow->sender_id,
+            "name"=>$firstRow->name,
             "fallbacks"=>[],
             "locations"=>[]
         ];
-        $this->insert($first);
-        //id,sender_id,location_id,name,date,eventType,eventData,locData,isFallback,locType  
+        $this->insert($firstRow);
     }
     public function insert($data){
         $location = [
@@ -50,7 +49,7 @@ class TimeEvent{
             $this->locations[] = $location;
         }
     }
-    public function fire(){
+    public function fire(ActionProcessor $actPrc){
         $this->senderData["fallbacks"] = $this->fallbacks;
         $this->senderData["locations"] = $this->locations;
         //{act:delete,table:'a'},{act:update,table:'a'}
@@ -58,7 +57,7 @@ class TimeEvent{
         $calendarEvent =  CalendarEventGetter::create($this->calendarEventData["data"],$this->calendarEventData['type']);
         $eventResult = $calendarEvent->getData();
         $act = $calendarEvent->action();
-        $this->actPrc->action($act,["event"=>$this->id,"trigger"=>$this->calendarEventData["id"]]);
+        $actPrc->action($act,["event"=>$this->id,"trigger"=>$this->calendarEventData["id"]]);
     }
     public static function extractFromDb(){
         $act = new DateTime();
@@ -78,26 +77,27 @@ class TimeEvent{
         }
 
         $actionProcessor = new ActionProcessor(["event"=>"eventsdatas","trigger"=>"timeevents"]);
-        $timeEv = new TimeEvent($first,$actionProcessor);
+        $timeEv = new TimeEvent($first);
         $actTimed = $first->id;
         $totEvents++;
         foreach( $events as $event){
             $results++;
-            if($event->id != $actTimed){
-                $totEvents++;
+            if($event->id == $actTimed){
+                $timeEv->insert($event);
+                continue;
+            }
+            $totEvents++;
             try{
-                    $timeEv->fire();
+                $timeEv->fire($actionProcessor);
             }catch(Exception $e){
                 $failed++;
-                    $exceptions[] = $e;
+                $exceptions[] = $e;
+            }
+            $timeEv = new TimeEvent($event,$actionProcessor);
+            $actTimed = $event->id;
         }
-                $timeEv = new TimeEvent($event,$actionProcessor);
-                $actTimed = $event->id;
-            }else{
-                $timeEv->insert($event);
-    }
-    }
-        $timeEv->fire();
+        $timeEv->fire($actionProcessor);
+        $actionProcessor->execute();
         return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents,"exceptions"=>$exceptions];
     }
 }

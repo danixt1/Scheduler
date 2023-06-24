@@ -1,9 +1,18 @@
 <?php 
 namespace App\Classes;
-use Illuminate\Support\Facades\DB;
+
 class Sender{
-    const SEL_LOCS = '';
-    public function __construct($id){
+
+    private array $locations = [];
+    private array $fallbacks = [];
+    private string $name = '';
+    private int $id;
+
+    public function __construct(array $data){
+        $this->id = $data['id'];
+        $this->locations = $data['locations'];
+        $this->fallbacks = $data['fallbacks'];
+        $this->name = $data['name'];
     }
 }
 ?>

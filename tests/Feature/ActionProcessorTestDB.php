@@ -10,15 +10,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
-class ActionProcessorTest extends TestCase
-{
+class ActionProcessorTestDB extends TestCase{
     public static act $act;
     public static array $ref = ["event"=>"eventsdatas","trigger"=>"timeevents"];
-    public static function setUpBeforeClass(): void{
-        $app = require __DIR__.'/../../bootstrap/app.php';
-        $app->make(Kernel::class)->bootstrap();
-        self::$act = new act(self::$ref);
-    }
 
     public static function delProvider():array{
         $t = [1,2,4,7,8];
@@ -40,11 +34,15 @@ class ActionProcessorTest extends TestCase
         ];
     }
 
+    public function test_build_actionProcessor(){
+        self::$act = new act(self::$ref);
+        $this->assertTrue(true);
+    }
+    #[Depends('test_build_actionProcessor')]
     public function test_prepare_db(){
         $this->assertEquals(0,Artisan::call('migrate:fresh'),Artisan::output());
         $this->assertEquals(0,Artisan::call('db:seed'),Artisan::output());
     }
-
     #[Depends('test_prepare_db')]
     public function test_add_delete_actions(){
         $act = self::$act;

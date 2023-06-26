@@ -1,9 +1,9 @@
 <?php
 
 namespace App\Events;
-use App\Classes\CalendarEventGetter;
+use App\Classes\CalendarEventBuilder;
 
-class Reminder extends CalendarEventGetter{
+class Reminder extends CalendarEventBuilder{
     private string $name;
     private string $desc;
 

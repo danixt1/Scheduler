@@ -1,11 +1,11 @@
 <?php
 namespace Tests;
 use Tests\TestCase;
-use App\Classes\CalendarEventGetter;
+use App\Classes\CalendarEventBuilder;
 
 abstract class EventTestCase extends TestCase{
-    protected CalendarEventGetter $event;
-    public function __construct(CalendarEventGetter $ev,string $name){
+    protected CalendarEventBuilder $event;
+    public function __construct(CalendarEventBuilder $ev,string $name){
         parent::__construct($name);
         $this->event = $ev;
     }

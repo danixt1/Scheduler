@@ -2,8 +2,7 @@
 
 namespace App\Classes;
 use App\Locations\HttpRequestMode;
-abstract class LocationGetter{
-    private static $locations = [];
+abstract class LocationBuilder extends \App\Classes\Builder{
     abstract static function isDataValid(array $data,array &$arr = null):bool;
     abstract public function send(array $data):bool;
     protected static function check($checker,$data):array{
@@ -30,13 +29,9 @@ abstract class LocationGetter{
         }
         return ['passed'];
     }
-
-    public static function register(int $id,string $loc){
-        self::$locations[$id] = $loc;
-    }
-    public static function create(int $id,array $data):LocationGetter{
-        return new self::$locations[$id]($data);
+    static public function create(mixed $data, int $type): LocationBuilder{
+        return self::instantiate($data,$type);
     }
 }
 
-LocationGetter::register(1,HttpRequestMode::class);
+LocationBuilder::register(1,HttpRequestMode::class);

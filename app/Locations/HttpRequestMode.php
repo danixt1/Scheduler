@@ -4,7 +4,7 @@ namespace App\Locations;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
-class HttpRequestMode extends \App\Classes\LocationGetter{
+class HttpRequestMode extends \App\Classes\LocationBuilder{
     private string $method = 'GET';
     private string $url = '';
     private array $header = [];

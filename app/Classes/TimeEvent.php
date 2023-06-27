@@ -3,11 +3,12 @@
 namespace App\Classes;
 
 use App\Classes\CalendarEventBuilder;
-use App\Classes\LocationBuilder;
 use DateTime;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
+
 const DB_QUERY = 'SELECT te.id,s.id as sender_id,l.id as location_id,ed.id as event_id,s.name,te.date,ed.type as eventType,ed.data as eventData,l.data as locData,ls.isFallback,l.type as locType FROM timeevents as te 
 INNER JOIN senders as s ON s.id = te.sender_id 
 INNER JOIN eventsdatas as ed on ed.id = te.eventsdata_id 
@@ -49,16 +50,23 @@ class TimeEvent{
             $this->locations[] = $location;
         }
     }
+    /**
+     * @Throws
+     */
     public function fire(ActionProcessor $actPrc){
         $this->senderData["fallbacks"] = $this->fallbacks;
         $this->senderData["locations"] = $this->locations;
-        //{act:delete,table:'a'},{act:update,table:'a'}
 
+        $sender = new \App\Classes\Sender($this->senderData);
         $calendarEvent =  CalendarEventBuilder::create($this->calendarEventData["data"],$this->calendarEventData['type']);
         $eventResult = $calendarEvent->getData();
         $act = $calendarEvent->action();
+        if($act){
+            $actPrc->action($act,["event"=>$this->id,"trigger"=>$this->calendarEventData["id"]]);
+        }
+        $sender->sendData($eventResult);
+        return true;
 
-        $actPrc->action($act,["event"=>$this->id,"trigger"=>$this->calendarEventData["id"]]);
     }
     public static function extractFromDb(){
         $act = new DateTime();
@@ -68,37 +76,40 @@ class TimeEvent{
         $success = 0;
         $failed = 0;
         $exceptions = [];
-
         $totEvents = 0;
-        $events = DB::select(DB_QUERY,[$act->format(DB_DATETIME_PATTERN)]);
-        $first = array_shift($events);
+        $eventsQuery = DB::select(DB_QUERY,[$act->format(DB_DATETIME_PATTERN)]);
+        $first = array_shift($eventsQuery);
 
         if(!isset($first)){
             return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents];
         }
 
         $actionProcessor = new ActionProcessor(["event"=>"eventsdatas","trigger"=>"timeevents"]);
+        $fireEv = function(TimeEvent $ev) use (&$failed,&$exceptions,$actionProcessor){
+            try{
+                $ev->fire($actionProcessor);
+            }catch(Throwable $e){
+                $failed++;
+                $exceptions[] = [$e];
+            }
+        };
         $timeEv = new TimeEvent($first);
         $actTimed = $first->id;
         $totEvents++;
-        foreach( $events as $event){
+        foreach( $eventsQuery as $event){
             $results++;
             if($event->id == $actTimed){
                 $timeEv->insert($event);
                 continue;
             }
             $totEvents++;
-            try{
-                $timeEv->fire($actionProcessor);
-            }catch(Exception $e){
-                $failed++;
-                $exceptions[] = $e;
-            }
             $timeEv = new TimeEvent($event,$actionProcessor);
+            $fireEv($timeEv);
             $actTimed = $event->id;
         }
-        $timeEv->fire($actionProcessor);
+        $fireEv($timeEv);
         $actionProcessor->execute();
         return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents,"exceptions"=>$exceptions];
+
     }
 }

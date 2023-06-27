@@ -13,16 +13,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Throwable;
 
 class LocationHttpRequestModeTest extends TestCase{
-    public function test_simple_request(): void{
-        Http::preventStrayRequests();
-        Http::fake([
-            'https://fake-url.com'=>Http::response(null,200)
-        ]);
-        $req = new HttpRequestMode([
-            'u'=>'https://fake-url.com',
-        ]);
-        $this->assertTrue($req->send([]));
-    }
     public static function validationProvider():array{
         $vHeader = (object)['Auth'=>'as2sc1'];
         return [
@@ -35,6 +25,17 @@ class LocationHttpRequestModeTest extends TestCase{
             [['u'=>'https://a.com','h'=>$vHeader], true ],
             [['u'=>11],                            false]
         ];
+    }
+    
+    public function test_simple_request(): void{
+        Http::preventStrayRequests();
+        Http::fake([
+            'https://fake-url.com'=>Http::response(null,200)
+        ]);
+        $req = new HttpRequestMode([
+            'u'=>'https://fake-url.com',
+        ]);
+        $this->assertTrue($req->send([]));
     }
     /**
      * Test if have false positive

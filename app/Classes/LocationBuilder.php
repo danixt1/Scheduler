@@ -2,7 +2,8 @@
 
 namespace App\Classes;
 use App\Locations\HttpRequestMode;
-abstract class LocationBuilder extends \App\Classes\Builder{
+abstract class LocationBuilder implements \App\Classes\Builder{
+    protected static $list = [];
     abstract static function isDataValid(array $data,array &$arr = null):bool;
     abstract public function send(array $data):bool;
     protected static function check($checker,$data):array{
@@ -29,9 +30,15 @@ abstract class LocationBuilder extends \App\Classes\Builder{
         }
         return ['passed'];
     }
-    static public function create(mixed $data, int $type): LocationBuilder{
-        return self::instantiate($data,$type);
+    public static function locationValidator(array $data,int $type,array &$ret = null):bool{
+        return self::$list[$type]::isDataValid($data,$ret);
+    }
+    public static function create(mixed $data, int $type): LocationBuilder{
+        return new self::$list[$type]($data);
+    }
+    public static function register(string $class, int $id): void{
+        self::$list[$id] = $class;
     }
 }
 
-LocationBuilder::register(1,HttpRequestMode::class);
+LocationBuilder::register(HttpRequestMode::class,1);

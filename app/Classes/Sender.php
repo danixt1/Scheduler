@@ -1,43 +1,27 @@
-<?php 
+<?php
+
 namespace App\Classes;
 
-use App\Classes\LocationBuilder;
-use Illuminate\Support\Arr;
-
 class Sender{
-    private array $locations = [];
-    private array $fallbacks = [];
-    private string $name = '';
-
-    public function __construct(array $data){
-        $this->locations = $data['locations'];
-        $this->fallbacks = $data['fallbacks'];
-        $this->name = $data['name'];
-    }
+    /**
+     * @param \App\Classes\LocationBuilder[] $locations
+     * @param \App\Classes\LocationBuilder[] $fallbacks
+     */
+    public function __construct(private string $name,private array $locations,private array $fallbacks = []){}
     public function sendData(array $dataToSend){
         $dataToSend = array_merge($dataToSend,['sender'=>$this->name,'isFallback'=>false]);
         foreach($this->locations as $location){
-            $res = $this->runLoc($location,$dataToSend);
+            $res = $location->send($dataToSend);
             if(!$res){
                 $this->callFallbacks($dataToSend);
             }
         }
     }
     private function callFallbacks(array $dataToSend){
-        $dataToSend = array_merge($dataToSend,['isFallback'=>true]);
+        $dataToSend['isFallback'] = true;
         foreach($this->fallbacks as $fallback){
-            $this->runLoc($fallback,$dataToSend);
+            $fallback->send($dataToSend);
         }
-    }
-    private function runLoc($loc,mixed $send,&$execDetail = null){
-        $type = $loc['type'];
-        $data = $loc['data'];
-        $execDetail = [];
-        if(!LocationBuilder::locationValidator($data,$type,$execDetail)){
-            return false;
-        };
-        $loc = LocationBuilder::create($data,$type);
-        return $loc->send($send);
     }
 }
 ?>

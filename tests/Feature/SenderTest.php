@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Classes\Sender;
+use App\Classes\LocationBuilder;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -12,21 +13,20 @@ use Tests\TestCase;
 class SenderTest extends TestCase{
     protected static Sender $sender;
     protected static $urls = ['https://test1.loc','https://test2.loc','https://falltest1.fal','https://falltest2.fal'];
-
+    protected static function buildLocation($url){
+        return LocationBuilder::create(['u'=>$url,'d'=>'json'],1);
+    }
     public function test_construct_sender(): void{
         $urls = self::$urls;
-        $sender = [
-            'locations'=>[
-                ['type'=>1,'data'=>['u'=>$urls[0],'d'=>'json']],
-                ['type'=>1,'data'=>['u'=>$urls[1],'d'=>'json']]
-            ],
-            'fallbacks'=>[
-                ['type'=>1,'data'=>['u'=>$urls[2],'d'=>'json']],
-                ['type'=>1,'data'=>['u'=>$urls[3],'d'=>'json']]
-            ],
-            'name'=>'Test Sender'
+        $locations =[
+            self::buildLocation($urls[0]),
+            self::buildLocation($urls[1])
         ];
-        self::$sender = new Sender($sender);
+        $fallbacks = [
+            self::buildLocation($urls[2]),
+            self::buildLocation($urls[3])
+        ];
+        self::$sender = new Sender('Test Sender',$locations,$fallbacks);
         $this->assertTrue(true);
     }
     #[Depends('test_construct_sender')]
@@ -67,11 +67,7 @@ class SenderTest extends TestCase{
         $this->assertTrue($receivedFallback,'Fallback not actived');
     }
     public function test_dont_throw_with_invalid_data():void{
-        $sender = new Sender([
-            'locations'=>[['type'=>1,'data'=>['u'=>2321]]],
-            'fallbacks'=>[],
-            'name'=>'not throw'
-        ]);
+        $sender = new Sender('not throw',[self::buildLocation(2332)],[]);
         $sender->sendData([]);
         $this->assertTrue(true);
     }

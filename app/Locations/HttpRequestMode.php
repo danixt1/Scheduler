@@ -1,9 +1,9 @@
 <?php
 namespace App\Locations;
 
+use Exception;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Throwable;
+
 class HttpRequestMode extends \App\Classes\LocationBuilder{
     private string $method = 'GET';
     private string $url = '';
@@ -74,8 +74,12 @@ class HttpRequestMode extends \App\Classes\LocationBuilder{
         if($putDataIn === 'json'){
             $prepare->asJson()->withBody(json_encode($data));
         };
-        $resp = $prepare->send($this->method,$this->url . ($add ? '?'.$add : ''));
-        return $resp->successful();
+        try{
+            $resp = $prepare->send($this->method,$this->url . ($add ? '?'.$add : ''));
+            return $resp->successful();
+        }catch(Exception $e){
+            return false;
+        }
     }
     private function getPutDataIn(){
         if($this->putDataIn === 'default'){

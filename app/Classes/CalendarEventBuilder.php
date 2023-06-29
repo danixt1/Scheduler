@@ -6,7 +6,7 @@ use App\Events\Reminder;
 abstract class CalendarEventBuilder implements \App\Classes\Builder{
     protected static $list = [];
     abstract function getData():array;
-    abstract function action():array | null;
+    abstract function getAction():array | null;
     public static function create(mixed $data, int $type): CalendarEventBuilder{
         return new self::$list[$type]($data);
     }

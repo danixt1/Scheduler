@@ -13,16 +13,11 @@ const DB_QUERY = 'SELECT te.id,s.id as sender_id,l.id as location_id,ed.id as ev
 INNER JOIN senders as s ON s.id = te.sender_id 
 INNER JOIN eventsdatas as ed on ed.id = te.eventsdata_id 
 INNER JOIN locsenders as ls ON s.id = ls.sender_id 
-INNER JOIN locations as l ON l.id = ls.location_id WHERE te.date < ?;';
+INNER JOIN locations as l ON l.id = ls.location_id';
 
 class TimeEvent{
-    private array $senderData;
-    private array $calendarEventData = [];
-    private string $date;
-    private array $fallbacks = [];
-    private array $locations = [];
-    private int $id;
-    public function __construct($firstRow){
+    public function __construct(private string $date,private Sender $sender,private CalendarEventBuilder $calendar){
+        /*
         $this->id = $firstRow->id;
         $this->date = $firstRow->date;
         $this->calendarEventData = [
@@ -35,25 +30,18 @@ class TimeEvent{
             "name"=>$firstRow->name,
             "fallbacks"=>[],
             "locations"=>[]
-        ];
-        $this->insert($firstRow);
-    }
-    public function insert($data){
-        $location = [
-            "id"=>$data->location_id,
-            "data"=>json_decode($data->locData),
-            "type"=>$data->locType
-        ];
-        if($data->isFallback === 1){
-            $this->fallbacks[] = $location;
-        }else{
-            $this->locations[] = $location;
-        }
+        ];*/
+        //$this->insert($firstRow);
     }
     /**
      * @Throws
      */
     public function fire(ActionProcessor $actPrc){
+        $sender = $this->sender;
+        $calendar = $this->calendar;
+        $act =$calendar->getAction();
+
+        /*
         $this->senderData["fallbacks"] = $this->fallbacks;
         $this->senderData["locations"] = $this->locations;
 
@@ -64,7 +52,7 @@ class TimeEvent{
         if($act){
             $actPrc->action($act,["event"=>$this->id,"trigger"=>$this->calendarEventData["id"]]);
         }
-        $sender->sendData($eventResult);
+        $sender->sendData($eventResult);*/
         return true;
 
     }
@@ -77,7 +65,7 @@ class TimeEvent{
         $failed = 0;
         $exceptions = [];
         $totEvents = 0;
-        $eventsQuery = DB::select(DB_QUERY,[$act->format(DB_DATETIME_PATTERN)]);
+        $eventsQuery = self::runQuery($act);
         $first = array_shift($eventsQuery);
 
         if(!isset($first)){
@@ -111,5 +99,8 @@ class TimeEvent{
         $actionProcessor->execute();
         return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents,"exceptions"=>$exceptions];
 
+    }
+    public static function runQuery(DateTime $date = null){
+        return $date === null ? DB::select(DB_QUERY) : DB::select(DB_QUERY . ' WHERE te.date < ?;',[$date->format(DB_DATETIME_PATTERN)]);
     }
 }

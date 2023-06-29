@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Throwable;
 
 class LocationHttpRequestModeTest extends TestCase{
+
     public static function validationProvider():array{
         $vHeader = (object)['Auth'=>'as2sc1'];
         return [
@@ -147,5 +148,15 @@ class LocationHttpRequestModeTest extends TestCase{
         $result = [];
         $res = HttpRequestMode::isDataValid($data,$result);
         $this->assertEquals($expected,$res,"invalid assert returned:".json_encode($result));
+    }
+    public function test_return_false_case_address_not_reachable(){
+        Http::fake(function(Request $req){
+            //Don't return any response
+        });
+        $req = new HttpRequestMode([
+            'u'=>'https://test.com',
+            'd'=>'query'
+        ]);
+        $this->assertFalse($req->send([]));
     }
 }

@@ -21,10 +21,10 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database.
      */
     public function run(): void{
-        $locs = Location::factory()->count(20)->create();
+        $locs = Location::factory()->count(10)->create();
         $sender = Sender::factory()->count(3)->create();
 
-        $uniqueEvents = EventsData::factory()->count(20)->create();
+        $uniqueEvents = EventsData::factory()->count(10)->create();
 
         $locsSenders = new Collection();
         $timeEvents = new Collection();

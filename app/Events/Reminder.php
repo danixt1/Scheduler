@@ -17,7 +17,7 @@ class Reminder extends CalendarEventBuilder{
             'description'=>$this->desc
         ];
     }
-    public function action(): array{
+    public function getAction(): array{
         return ["action"=>"delete","target"=>"event"];
     }
 }

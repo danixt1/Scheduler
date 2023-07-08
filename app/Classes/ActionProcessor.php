@@ -2,12 +2,19 @@
 namespace App\Classes;
 use Illuminate\Support\Facades\DB;
 use Exception;
-
+/**
+ * It's serve to create a bulk of actions to make in DB, to pass in a low usage of calls to DB.
+ */
 class ActionProcessor{
     protected array $names;
     protected array $delete = [];
     protected array $update = [];
-
+    /**
+     * @param array<string,string> $relativeNames the used name in action and the relative name in DB
+     * ```php
+     *  new ActionProcessor(['action_name'=>'table_name'])
+     * ```
+     */
     public function __construct(array $relativeNames){
         $this->names = $relativeNames;
         foreach($relativeNames as $tableName){
@@ -16,7 +23,8 @@ class ActionProcessor{
         };
 
     }
-    public function action(array $act,array $ids){
+    public function action(ActionMaker $action,array $ids){
+        $act = $action->get();
         $tableName =$this->names[$act["target"]];
         $relativeName = $act["target"];
         $actionName = $act["action"];

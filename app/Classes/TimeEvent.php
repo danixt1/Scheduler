@@ -16,23 +16,12 @@ INNER JOIN locsenders as ls ON s.id = ls.sender_id
 INNER JOIN locations as l ON l.id = ls.location_id';
 
 class TimeEvent{
-    public function __construct(private string $date,private Sender $sender,private CalendarEventBuilder $calendar){
-        /*
-        $this->id = $firstRow->id;
-        $this->date = $firstRow->date;
-        $this->calendarEventData = [
-            "id"=>$firstRow->event_id,
-            "data"=>json_decode($firstRow->eventData),
-            "type"=>$firstRow->eventType
-        ];
-        $this->senderData = [
-            "id"=>$firstRow->sender_id,
-            "name"=>$firstRow->name,
-            "fallbacks"=>[],
-            "locations"=>[]
-        ];*/
-        //$this->insert($firstRow);
-    }
+    public function __construct(
+        private int $id,
+        private string $date,
+        private Sender $sender,
+        private CalendarEventBuilder $calendar
+    ){}
     /**
      * @Throws
      */
@@ -40,21 +29,13 @@ class TimeEvent{
         $sender = $this->sender;
         $calendar = $this->calendar;
         $act =$calendar->getAction();
-
-        /*
-        $this->senderData["fallbacks"] = $this->fallbacks;
-        $this->senderData["locations"] = $this->locations;
-
-        $sender = new \App\Classes\Sender($this->senderData);
-        $calendarEvent =  CalendarEventBuilder::create($this->calendarEventData["data"],$this->calendarEventData['type']);
-        $eventResult = $calendarEvent->getData();
-        $act = $calendarEvent->action();
+        $eventInfo = $calendar->getData();
         if($act){
-            $actPrc->action($act,["event"=>$this->id,"trigger"=>$this->calendarEventData["id"]]);
+            $idCalendar = $calendar->getId();
+            if($idCalendar != -1)
+                $actPrc->action($act,["event"=>$this->id,"trigger"=>$idCalendar]);
         }
-        $sender->sendData($eventResult);*/
-        return true;
-
+        $sender->sendData($eventInfo);
     }
     public static function extractFromDb(){
         $act = new DateTime();
@@ -66,41 +47,60 @@ class TimeEvent{
         $exceptions = [];
         $totEvents = 0;
         $eventsQuery = self::runQuery($act);
-        $first = array_shift($eventsQuery);
-
-        if(!isset($first)){
+        if(count($eventsQuery) == 0){
             return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents];
         }
 
         $actionProcessor = new ActionProcessor(["event"=>"eventsdatas","trigger"=>"timeevents"]);
-        $fireEv = function(TimeEvent $ev) use (&$failed,&$exceptions,$actionProcessor){
+        $triggers = [];
+        $trigger = [];
+        $actId = $eventsQuery[0]->id;
+        foreach($eventsQuery as $ev){
+            if($actId != $ev->id){
+                $triggers[] = $trigger;
+                $trigger = [];
+                $actId = $ev->id;
+            };
+            $trigger[] = $ev;
+        }
+        $triggers[] = $trigger;
+        foreach($triggers as $ev){
+            $data = [];
             try{
-                $ev->fire($actionProcessor);
+                $data = json_decode($ev[0]->eventData);
             }catch(Throwable $e){
-                $failed++;
-                $exceptions[] = [$e];
-            }
-        };
-        $timeEv = new TimeEvent($first);
-        $actTimed = $first->id;
-        $totEvents++;
-        foreach( $eventsQuery as $event){
-            $results++;
-            if($event->id == $actTimed){
-                $timeEv->insert($event);
+                Log::error('Invalid DB data "eventData" don\'t is a valid string JSON format with row id {id}',(array)$ev[0]);
                 continue;
             }
-            $totEvents++;
-            $timeEv = new TimeEvent($event,$actionProcessor);
-            $fireEv($timeEv);
-            $actTimed = $event->id;
-        }
-        $fireEv($timeEv);
-        $actionProcessor->execute();
-        return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents,"exceptions"=>$exceptions];
+            $event = CalendarEventBuilder::create($data,$ev[0]->eventType,$ev[0]->event_id);
+            $locations = [];
+            $fallbacks = [];
 
+            foreach($ev as $row){
+                $evData = $row->locData;
+                try{
+                    $evData = json_decode($evData);
+                }catch(Throwable $e){
+                    Log::error('Invalid DB data "locData" don\'t is a valid string JSON format with row id {id}',(array)$ev[0]);
+                    continue;
+                }
+                $evType = $row->locType;
+                $isFallback = $row->isFallback == 1;
+                $location = LocationBuilder::create($evData,$evType);
+                if($isFallback){
+                    $fallbacks[] = $location;
+                }else{
+                    $locations[] = $location;
+                }
+            }
+            $sender = new Sender($ev[0]->name,$locations,$fallbacks);
+            $timedEvent = new TimeEvent($ev[0]->id,$ev[0]->date,$sender,$event);
+            $timedEvent->fire($actionProcessor);
+        }
+        $actionProcessor->execute();
     }
     public static function runQuery(DateTime $date = null){
-        return $date === null ? DB::select(DB_QUERY) : DB::select(DB_QUERY . ' WHERE te.date < ?;',[$date->format(DB_DATETIME_PATTERN)]);
+        $query =DB_QUERY.($date === null ? '' : ' WHERE te.date < ?'). ' ORDER BY id;';
+        return $date === null ? DB::select($query) : DB::select($query,[$date->format(DB_DATETIME_PATTERN)]);
     }
 }

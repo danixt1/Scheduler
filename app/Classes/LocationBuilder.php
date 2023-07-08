@@ -2,6 +2,7 @@
 
 namespace App\Classes;
 use App\Locations\HttpRequestMode;
+
 abstract class LocationBuilder implements \App\Classes\Builder{
     protected static $list = [];
     abstract static function isDataValid(array $data,array &$arr = null):bool;
@@ -34,7 +35,7 @@ abstract class LocationBuilder implements \App\Classes\Builder{
         return self::$list[$type]::isDataValid($data,$ret);
     }
     public static function create(mixed $data, int $type): LocationBuilder{
-        return new self::$list[$type]($data);
+        return new self::$list[$type]((array)$data);
     }
     public static function register(string $class, int $id): void{
         self::$list[$id] = $class;

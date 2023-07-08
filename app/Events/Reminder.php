@@ -1,15 +1,18 @@
 <?php
 
 namespace App\Events;
+
+use App\Classes\ActionMaker;
 use App\Classes\CalendarEventBuilder;
 
 class Reminder extends CalendarEventBuilder{
     private string $name;
     private string $desc;
-
-    public function __construct(array $data){
+    private int $id; 
+    public function __construct(array $data,int $id = -1){
         $this->name = $data[0];
         $this->desc = $data[1];
+        $this->id = $id;
     }
     public function getData():array{
         return [
@@ -17,8 +20,12 @@ class Reminder extends CalendarEventBuilder{
             'description'=>$this->desc
         ];
     }
-    public function getAction(): array{
-        return ["action"=>"delete","target"=>"event"];
+    public function getId(): int{
+        return $this->id;
+    }
+    public function getAction(): ActionMaker{
+        ActionMaker::delete()->in("event");
+        return ActionMaker::delete()->in("event");
     }
 }
 ?>

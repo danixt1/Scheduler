@@ -24,7 +24,7 @@ class TimeEventTestDB extends TestCase
      * @return array<string,\Illuminate\Database\Eloquent\Collection>
      */
     protected static function make_db($count = []):array{
-        Artisan::call('migrate fresh');
+        Artisan::call('migrate:fresh');
         $count = array_merge(
             [
                 'events'=>2,

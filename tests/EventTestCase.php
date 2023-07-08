@@ -10,7 +10,9 @@ abstract class EventTestCase extends TestCase{
         $this->event = $ev;
     }
     public function test_action_result_is_valid(){
-        $res = $this->event->action();
+        $res = $this->event->getAction();
+        $this->assertIsObject($res);
+        $res = $res->get();
         $this->assertArrayHasKey('action',$res);
         $this->assertArrayHasKey('target',$res);
         $this->assertContains($res['action'],["update","delete"],"invalid string in property action, passed value:".$res['action']);

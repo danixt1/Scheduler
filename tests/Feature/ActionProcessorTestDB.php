@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Classes\ActionMaker;
 use App\Classes\ActionProcessor as act;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Depends;
@@ -48,10 +49,7 @@ class ActionProcessorTestDB extends TestCase{
         $act = self::$act;
         foreach(self::delProvider() as $del){
             [$name,$id] = $del;
-            $act->action([
-                "action"=>"delete",
-                "target"=>$name
-            ],[$name => $id]);
+            $act->action(ActionMaker::delete()->in($name),[$name => $id]);
         };
         $this->assertTrue(true);
     }
@@ -61,11 +59,8 @@ class ActionProcessorTestDB extends TestCase{
         $act = self::$act;
         foreach(self::updProvider() as $upd){
             [$relativeName,$id,$data] = $upd;
-            $act->action([
-                'action'=>'update',
-                'target'=>$relativeName,
-                'data'=>$data
-            ],[$relativeName=>$id]);
+            $act->action(ActionMaker::update($data)->in($relativeName)
+            ,[$relativeName=>$id]);
         };
         $this->assertTrue(true);
     }

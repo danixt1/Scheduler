@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -15,8 +16,6 @@ use Illuminate\Support\Facades\Http;
 */
 
 Route::get('/', function () {
-    return view('welcome')->render();
-});
-Route::get('/test',function(){
-    return '<html><head><title>aa</title></head></html>';
+    //return view('welcome')->render();
+    return Inertia::render("app");
 });

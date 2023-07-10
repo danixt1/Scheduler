@@ -1,0 +1,27 @@
+.cl-day{
+    text-align: center;
+    width: 150px;
+    height: 150px;
+    font-size: 50px;
+    border-collapse: collapse;
+    border:2px solid black;
+    border-spacing: 0;
+}
+.cl-in{
+    background-color: white;
+    color:black
+}
+.cl-off{
+    background-color: white;
+    color:rgb(179, 179, 179)
+}
+.calendar th{
+    border: 2px solid black;
+}
+.calendar{
+    width:100%;
+    border-collapse: collapse;
+}
+.calendar tr{
+    border-spacing: 0;
+}

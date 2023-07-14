@@ -1,0 +1,80 @@
+.cl th{
+    border: 2px solid var(--border);
+}
+.cl-content div{
+    max-height: 1000px;
+}
+.cl-content{
+    display: flex;
+}
+.cl-content{
+    border:2px solid var(--border);
+    display: flex;
+    width:calc(100% - 4px);
+    height:calc(100% - 4px);
+    flex-direction: column;
+}
+.cl-days{
+    padding: 4px 0px 4px 0px;
+}
+.cl{
+    border-spacing: 0;
+    background-color: var(--bg-main);
+    height: 100%;
+    width:100%;
+    border-collapse: collapse;
+}
+.cl tr{
+    border-spacing: 0;
+}
+.cl-day{
+    transition: background-color .5s;
+    text-align: center;
+    width: 100px;
+    height: calc(100% / 6 + (6 * 2px));
+    font-size: xx-large;
+    border-collapse: collapse;
+    border:1px solid var(--border);
+    border-spacing: 0;
+    cursor: pointer;
+}
+.cl-in{
+    transition: background-color .5s;
+    color:var(--color)
+}
+.cl-in:hover{
+    background-color: var(--bg-title);
+}
+.cl-off:hover{
+    background-color: var(--bg-title);
+}
+.cl-off{
+    color:var(--color-disabled)
+}
+tr td.cl-day:first-child{
+    border-left: none !important;
+}
+/*Menu Top*/
+.cl-top{
+    background-color: var(--bg-title);
+    display: flex;
+    justify-content: space-between;
+}
+.cl-btn{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-weight: bold;
+    font-size: larger;
+    cursor: pointer;
+}
+.cl-before{
+    padding-left: 5px;
+}
+.cl-after{
+    padding-right: 5px;
+}
+.cl-title{
+    font-size: large;
+    padding: 5px 0px 5px 10px;
+}

@@ -12,6 +12,7 @@ createInertiaApp({
         return pages[`./Pages/${name}.js`];
     },
     setup({ el, App, props }) {
+        document.body.className = 'light';
         createRoot(el).render(_jsx(StrictMode, { children: _jsx(App, { ...props }) }));
     },
 });

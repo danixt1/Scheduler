@@ -1,5 +1,10 @@
-import React from 'react';
-
+import { CalendarEvent, CalendarEventContext } from "../contexts.js";
+import {useContext,useState} from 'react'
+interface DayInfo{
+    day:number
+    inMonth:boolean
+}
+const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
 function Day({d,inM = true}:{d:number,inM?:boolean}){
     const put = d > 9 ? ''+d : '0'+d;
     let className = 'cl-day ' + (inM ? 'cl-in':'cl-off')
@@ -16,16 +21,16 @@ function getMonth(month:number,year:number){
     var first = new Date(year,month,1);
     return [laster.getDate(),first.getDay()];
 }
-export default function Calendar({month,year,selected}:{month:number,year:number,selected?:number}){
+function getMonthData(month:number,year:number){
     let monthInfo = getMonth(month,year);
-    let nexMonth = getMonth(month == 12 ? 1 : month + 1,year)[0];
     let before = getMonth(month == 1 ? 12 : month -1,year)[0];
-    let weeks:{day:number,inMonth:boolean}[][] = [];
+
+    let weeks:DayInfo[][] = [];
     let startCounting = false;
     let actualDay = 1;
-    let week:{day:number,inMonth:boolean}[] =[]
+    let week:DayInfo[] =[]
     let nexter = 1;
-    //Render first week 6
+
     for(let act =0; act < 7;act++){
         if(monthInfo[1] === act){
             startCounting = true;
@@ -52,28 +57,51 @@ export default function Calendar({month,year,selected}:{month:number,year:number
         }
         weeks.push(week);
     }
-    //Last Week
+    return weeks;
+}
+function renderMonth(weeks:DayInfo[][]){
+    return weeks.map(
+        (act,ind) => (
+        <tr key={'t'+ind}>
+            {act.map(({day,inMonth})=> <Day key={'c'+day + ind} d={day} inM={inMonth}></Day>)}
+        </tr>
+        )
+    )
+}
+export default function Calendar({month,year,selected, showTop=true}:{month:number,year:number,selected?:number,showTop?:boolean}){
+    let [weeks,setWeeks] = useState(getMonthData(month,year))
+    let {setEvents} = useContext(CalendarEventContext)
+    function updCalendar(month:number){
 
+    }
+    function updMonth(nextVal:number){
+        // TODO make month/year updater
+    }
     return (
-        <table className="calendar">
-            <thead>
-                <tr>
-                    <th>Domingo</th>
-                    <th>Segunda</th>
-                    <th>Terça</th>
-                    <th>Quarta</th>
-                    <th>Quinta</th>
-                    <th>Sexta</th>
-                    <th>Sabádo</th>
-                </tr>
-            </thead>
-            <tbody>
-                {
-                    weeks.map((act,ind) =><tr key={'t'+ind}>
-                        {act.map(e => <Day key={'c'+e.day + ind + month} d={e.day} inM={e.inMonth}></Day>)}
-                    </tr>)
-                }
-            </tbody>
-        </table>
+        <div className="cl-content">
+            <div className="cl-top">
+                <div className="cl-btn cl-before">{'<'}</div>
+                <div className="cl-title">{months[month - 1] + ' '+year}</div>
+                <div className="cl-btn cl-after">{'>'}</div>
+            </div>
+            <table className="cl">
+                <thead className="cl-days">
+                    <tr>
+                        <th>Domingo</th>
+                        <th>Segunda</th>
+                        <th>Terça</th>
+                        <th>Quarta</th>
+                        <th>Quinta</th>
+                        <th>Sexta</th>
+                        <th>Sabádo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {
+                        renderMonth(weeks)
+                    }
+                </tbody>
+            </table>
+        </div>
     )
 }

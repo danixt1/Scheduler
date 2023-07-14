@@ -15,6 +15,7 @@ createInertiaApp({
     return pages[`./Pages/${name}.js`]
   },
   setup({ el, App, props }:{el:Element,App:new()=>React.Component,props:any}) {
+    document.body.className = 'light'
     createRoot(el).render(
       <StrictMode>
         <App {...props} />

@@ -1,0 +1,23 @@
+html,body{
+    margin: 0;
+    padding: 0;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+.light{
+    --border: rgb(117, 116, 122);
+    --bg-main: rgb(241, 240, 247);
+    --bg-title: rgb(206, 204, 219);
+    --color: rgb(86, 86, 97);
+    --color-disabled: rgb(192, 193, 204);
+}
+.dark{
+    --border: rgb(16, 16, 17);
+    --bg-main: rgb(48, 50, 56);
+    --bg-title: rgb(22, 22, 24);
+    --color: white;
+    --color-disabled: rgb(172, 173, 189);
+}
+#app{
+    color:var(--color);
+    background-color: var(--bg-main);
+}

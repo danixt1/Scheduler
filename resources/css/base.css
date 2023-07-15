@@ -4,13 +4,17 @@ html,body{
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 .light{
-    --border: rgb(117, 116, 122);
+    --bg-selected-main: rgb(187, 183, 204);
+    --bg-selected-title: rgb(230, 226, 248);
     --bg-main: rgb(241, 240, 247);
+    --border: rgb(117, 116, 122);
     --bg-title: rgb(206, 204, 219);
-    --color: rgb(86, 86, 97);
+    --color: rgb(76, 76, 87);
     --color-disabled: rgb(192, 193, 204);
 }
 .dark{
+    --bg-selected-main: rgb(52, 60, 83);
+    --bg-selected-title: rgb(67, 67, 73);
     --border: rgb(16, 16, 17);
     --bg-main: rgb(48, 50, 56);
     --bg-title: rgb(22, 22, 24);

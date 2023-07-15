@@ -31,7 +31,7 @@ export default function App(){
         <>
         <Head title="Testing"/>
             <div style={{position:'absolute',width:'100%',height:'100%'}}>
-                <Calendar month={2} year={2023} showTop={false}></Calendar>
+                <Calendar month={2} year={2023} showTop={false} selected={28}></Calendar>
             </div>
         </>
     );

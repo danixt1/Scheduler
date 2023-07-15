@@ -1,5 +1,6 @@
 .cl th{
-    border: 2px solid var(--border);
+    border:solid var(--border);
+    border-width: 2px 1px 2px 1px;
 }
 .cl-content div{
     max-height: 1000px;
@@ -38,6 +39,17 @@
     border-spacing: 0;
     cursor: pointer;
 }
+.cl-sel{
+    width:100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:radial-gradient(circle at center,var(--bg-selected-main) 43%,transparent 44%);
+}
+.cl-sel:hover{
+    background:radial-gradient(circle at center,var(--bg-selected-title) 43%,transparent 44%);
+}
 .cl-in{
     transition: background-color .5s;
     color:var(--color)
@@ -51,8 +63,11 @@
 .cl-off{
     color:var(--color-disabled)
 }
-tr td.cl-day:first-child{
+tr td.cl-day:first-child,thead.cl-days tr th:first-child{
     border-left: none !important;
+}
+tr td.cl-day:last-child,thead.cl-days tr th:last-child{
+    border-right: none !important;
 }
 /*Menu Top*/
 .cl-top{

@@ -3,14 +3,16 @@ import {useContext,useState} from 'react'
 interface DayInfo{
     day:number
     inMonth:boolean
+    selected?:boolean
 }
 const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
-function Day({d,inM = true}:{d:number,inM?:boolean}){
+function Day({dayInfo}:{dayInfo:DayInfo}){
+    const {day:d,inMonth:inM = true,selected = false} = dayInfo
     const put = d > 9 ? ''+d : '0'+d;
-    let className = 'cl-day ' + (inM ? 'cl-in':'cl-off')
+    let className = 'cl-day ' + (inM ? 'cl-in':'cl-off');
     return (
         <td className={className}>
-            {put}
+            {selected ? <div className="cl-sel">{put}</div> : put}
         </td>
     )
 }
@@ -21,9 +23,9 @@ function getMonth(month:number,year:number){
     var first = new Date(year,month,1);
     return [laster.getDate(),first.getDay()];
 }
-function getMonthData(month:number,year:number){
+function getMonthData(month:number,year:number,selected?:number){
     let monthInfo = getMonth(month,year);
-    let before = getMonth(month == 1 ? 12 : month -1,year)[0];
+    let before = getMonth(month == 1 ? 12 : month -1,year)[0] - monthInfo[1];
 
     let weeks:DayInfo[][] = [];
     let startCounting = false;
@@ -36,22 +38,22 @@ function getMonthData(month:number,year:number){
             startCounting = true;
         }
         if(startCounting){
-            week.push({day:actualDay,inMonth:true})
+            week.push({day:actualDay,inMonth:true,selected:actualDay === selected})
             actualDay++;
             continue;
         }
+        before++;
         week.push({day:before,inMonth:false})
-        before--;
     }
     weeks.push(week);
     for(let actWeek = 0;actWeek < 5;actWeek++){
         week = [];
         for(let act = 0; act < 7; act++){
             if(actualDay <= monthInfo[0]){
-                week.push({day:actualDay,inMonth:true})
+                week.push({day:actualDay,inMonth:true,selected:actualDay === selected})
                 actualDay++;
             }else{
-                week.push({day:nexter,inMonth:false})
+                week.push({day:nexter,inMonth:false,selected:actualDay === selected})
                 nexter++;
             }
         }
@@ -59,30 +61,38 @@ function getMonthData(month:number,year:number){
     }
     return weeks;
 }
-function renderMonth(weeks:DayInfo[][]){
-    return weeks.map(
-        (act,ind) => (
-        <tr key={'t'+ind}>
-            {act.map(({day,inMonth})=> <Day key={'c'+day + ind} d={day} inM={inMonth}></Day>)}
-        </tr>
-        )
-    )
-}
 export default function Calendar({month,year,selected, showTop=true}:{month:number,year:number,selected?:number,showTop?:boolean}){
-    let [weeks,setWeeks] = useState(getMonthData(month,year))
+    let [date,setDate] = useState({month,year});
+    let [weeks,setWeeks] = useState(getMonthData(month,year,selected))
     let {setEvents} = useContext(CalendarEventContext)
-    function updCalendar(month:number){
-
+    function updCalendar(make:'add'|'rem'){
+        let date =updMonth(make);
+        setWeeks(getMonthData(date.month,date.year,(date.month == month && date.year == year ? selected:undefined)));
     }
-    function updMonth(nextVal:number){
-        // TODO make month/year updater
+    function updMonth(make:'add'|'rem'){
+        var op = make === 'add' ? 1 : -1;
+        let newMonth = date.month + op;
+        let actualSetter;
+        if(newMonth > 12){
+            actualSetter = {month:1,year:++date.year};
+            setDate(actualSetter);
+            return actualSetter;
+        };
+        if(newMonth < 1){
+            actualSetter = {month:12,year:--date.year}
+            setDate(actualSetter);
+            return actualSetter;
+        };
+        actualSetter = {month:newMonth,year:date.year};
+        setDate(actualSetter);
+        return actualSetter;
     }
     return (
         <div className="cl-content">
             <div className="cl-top">
-                <div className="cl-btn cl-before">{'<'}</div>
-                <div className="cl-title">{months[month - 1] + ' '+year}</div>
-                <div className="cl-btn cl-after">{'>'}</div>
+                <div className="cl-btn cl-before" onClick={(ev)=>{updCalendar('rem')}}>{'<'}</div>
+                <div className="cl-title">{months[date.month - 1] + ' '+date.year}</div>
+                <div className="cl-btn cl-after" onClick={(ev)=>{updCalendar('add')}} >{'>'}</div>
             </div>
             <table className="cl">
                 <thead className="cl-days">
@@ -97,9 +107,14 @@ export default function Calendar({month,year,selected, showTop=true}:{month:numb
                     </tr>
                 </thead>
                 <tbody>
-                    {
-                        renderMonth(weeks)
-                    }
+                    {weeks.map(
+                        (act,ind) => (
+                        <tr key={'t'+ind}>
+                            {act.map(
+                                (info)=> <Day key={'c'+info.day + ind} dayInfo={info}></Day>)}
+                        </tr>
+                        )
+                    )}
                 </tbody>
             </table>
         </div>

@@ -26,5 +26,5 @@ export default function App() {
     };
     let [events, setEvents] = useState([ev, ev2, ev3]);
     let eventer = { events, setEvents };
-    return (_jsxs(_Fragment, { children: [_jsx(Head, { title: "Testing" }), _jsx("div", { style: { position: 'absolute', width: '100%', height: '100%' }, children: _jsx(Calendar, { month: 2, year: 2023, showTop: false }) })] }));
+    return (_jsxs(_Fragment, { children: [_jsx(Head, { title: "Testing" }), _jsx("div", { style: { position: 'absolute', width: '100%', height: '100%' }, children: _jsx(Calendar, { month: 2, year: 2023, showTop: false, selected: 28 }) })] }));
 }

@@ -8,6 +8,8 @@ abstract class CalendarEventBuilder implements \App\Classes\Builder{
     abstract function getData():array;
     abstract function getAction():ActionMaker | null;
     abstract function getId():int;
+    /**Name used in front end */
+    abstract function getName():string;
     public static function create(mixed $data, int $type,int $id = -1): CalendarEventBuilder{
         return new self::$list[$type]((array) $data,$id);
     }

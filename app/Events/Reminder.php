@@ -24,8 +24,10 @@ class Reminder extends CalendarEventBuilder{
         return $this->id;
     }
     public function getAction(): ActionMaker{
-        ActionMaker::delete()->in("event");
         return ActionMaker::delete()->in("event");
+    }
+    public function getName(): string{
+        return 'reminder';
     }
 }
 ?>

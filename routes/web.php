@@ -1,9 +1,7 @@
 <?php
 
+use App\Http\Controllers\IndexController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Inertia\Inertia;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -15,7 +13,4 @@ use Inertia\Inertia;
 |
 */
 
-Route::get('/', function () {
-    //return view('welcome')->render();
-    return Inertia::render("app");
-});
+Route::get('/',[IndexController::class,'show']);

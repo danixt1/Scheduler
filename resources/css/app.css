@@ -1,3 +1,14 @@
 @import 'base.css';
 @import 'eventList.css';
 @import 'calendar.css';
+@import 'creater.css';
+.app-twoParts{
+    display: flex;
+    flex-direction: row;
+}
+.app-pt1{
+    flex-basis: 30%;
+}
+.app-pt2{
+    flex-basis: 70%;
+}

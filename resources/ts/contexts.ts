@@ -1,10 +1,9 @@
 import { createContext } from 'react';
 export interface CalendarEvent{
     title:string
-    desc?:string
-    date:{y:number,m:number,d:number}
-    hour:number
-    minutes:number
+    desc:string
+    date:Date
+    type:"reminder"
 }
 interface ContextInterface{
     events:CalendarEvent[]

@@ -12,7 +12,6 @@ interface PassedEvents{
 }
 export default function App({errors,events:_evs}:{errors:any,events:PassedEvents[]}){
     let evs:CalendarEvent[] = [];
-    console.log(_evs);
     
     _evs.map(e =>{
         evs.push({
@@ -22,7 +21,6 @@ export default function App({errors,events:_evs}:{errors:any,events:PassedEvents
             type:e.type
         })
     })
-    console.log(evs);
     let [events,setEvents] = useState(evs);
     let eventer = {events,setEvents}
     return (

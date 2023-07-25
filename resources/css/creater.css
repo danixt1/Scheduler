@@ -27,10 +27,23 @@
 .cr-window{
     position: fixed;
     z-index: 6;
-    width: 70%;
+    width: 40%;
     height: 90%;
     background-color: var(--bg-main);
     border-radius: 20px;
-    left: 15%;
+    left: 30%;
     top: 5%;
+}
+.cr-forms{
+    margin:10px
+}
+.cr-box-input{
+    margin:10px 0 8px 0;
+}
+.cr-data-input *{
+    height: 25px;
+}
+.cr-data-title{
+    padding-bottom: 1px;
+    font-size: large;
 }

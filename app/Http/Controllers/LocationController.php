@@ -13,7 +13,7 @@ class LocationController extends ApiController{
     {
         parent::__construct(Location::class,['name','data','type'],['id','name','data','type']);
     }
-    protected function checkerCreate(array &$data): null|JsonResponse{
+    protected function makeChecker(array &$data):Checker{
         $checker = new Checker($data);
 
         $checker->checkType('name','string');
@@ -27,6 +27,9 @@ class LocationController extends ApiController{
             return LocationBuilder::exist($val);
         });
         $checker->check('data',function ($val,&$ret) use ($data){
+            if(!isset($data['type'])){
+                return false;
+            }
             $err = [];
             $res = LocationBuilder::locationValidator($val,$data['type'],$err);
             if(!$res){
@@ -34,11 +37,9 @@ class LocationController extends ApiController{
             };
             return $res;
         });
-        $result = $checker->finish();
-        if(!$result){
-            $data['data'] = json_encode($data['data']);
-            return null;
-        };
-        return $result;
+        $checker->addBuilder('data',function($val){
+            return json_encode($val);
+        });
+        return $checker;
     }
 }

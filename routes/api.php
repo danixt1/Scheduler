@@ -20,27 +20,19 @@ use App\Http\Controllers\SenderController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::prefix('sender')->group(function (){
-    Route::get('/',[SenderController::class,'all']);
-    Route::post('/',[SenderController::class,'create']);
-    
-    Route::get('/{item}',[SenderController::class,'get']);
-    Route::delete('/{item}',[SenderController::class,'delete']);
-
-});
-
-
-Route::prefix('location')->group(function (){
-    Route::get('/',[LocationController::class,'all']);
-    Route::post('/',[LocationController::class,'create']);
-    
-    Route::get('/{item}',[LocationController::class,'get']);
-    Route::delete('/{item}',[LocationController::class,'delete']);
-});
-Route::prefix('locsender')->group(function (){
-    Route::get('/',[LocSenderController::class,'all']);
-    Route::post('/',[LocSenderController::class,'create']);
-
-    Route::get('/{item}',[LocSenderController::class,'get']);
-    Route::delete('/{item}',[LocSenderController::class,'delete']);
-});
+$cruds = [
+    ['sender',SenderController::class],
+    ['location',LocationController::class],
+    ['locsender',LocSenderController::class]
+];
+foreach($cruds as $crud){
+    $class = $crud[1];
+    Route::prefix($crud[0])->group(function() use ($class){
+        Route::get('/',[$class,'all']);
+        Route::post('/',[$class,'create']);
+        
+        Route::post('/{item}',[$class,'update']);
+        Route::get('/{item}',[$class,'get']);
+        Route::delete('/{item}',[$class,'delete']);
+    });
+};

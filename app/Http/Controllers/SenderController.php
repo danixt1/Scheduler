@@ -11,13 +11,13 @@ class SenderController extends ApiController{
     {
         parent::__construct(Sender::class,['name'],['id','name']);
     }
-    protected function checkerCreate(array &$data): ?JsonResponse
+    protected function makeChecker(array &$data): Checker
     {
         $checker = new Checker($data);
         $checker->checkType('name','string');
         $checker->check('name',function($val){
             return strlen($val) > 3;
         });
-        return $checker->finish();
+        return $checker;
     }
 }

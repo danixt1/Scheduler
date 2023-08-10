@@ -16,5 +16,9 @@ abstract class CalendarEventBuilder implements \App\Classes\Builder{
     public static function register(string $class, int $id): void{
         self::$list[$id] = $class;
     }
+    public static function exist($type): bool
+    {
+        return isset(self::$list[$type]);
+    }
 }
 CalendarEventBuilder::register(Reminder::class,1);

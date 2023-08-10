@@ -9,7 +9,10 @@ class Location extends Model
 {
     use HasFactory;
     public $timestamps = true;
+    protected $fillable = ['name','data','type'];
+
     public function LocSenders():HasMany{
         return $this->hasMany(LocSender::class);
     }
+
 }

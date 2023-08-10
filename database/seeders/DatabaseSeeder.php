@@ -26,16 +26,16 @@ class DatabaseSeeder extends Seeder
 
         $uniqueEvents = EventsData::factory()->count(10)->create();
 
-        $locsSenders = new Collection();
-        $timeEvents = new Collection();
+        //$locsSenders = new Collection();
+        //$timeEvents = new Collection();
         foreach($locs as $loc){
             $locSender = LocSender::factory()->count(1)->for($loc)->for($sender->random())->create();
-            $locsSenders->push($locSender);
+            //$locsSenders->push($locSender);
         };
 
         foreach($uniqueEvents as $ev){
             $timeEvent = TimeEvents::factory()->count(1)->for($ev)->for($sender->random())->create();
-            $timeEvents->push($timeEvent);
+            //$timeEvents->push($timeEvent);
         }
     }
 }

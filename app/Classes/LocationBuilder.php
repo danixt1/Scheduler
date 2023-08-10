@@ -40,6 +40,9 @@ abstract class LocationBuilder implements \App\Classes\Builder{
     public static function register(string $class, int $id): void{
         self::$list[$id] = $class;
     }
+    public static function exist($type): bool{
+        return isset(self::$list[$type]);
+    }
 }
 
 LocationBuilder::register(HttpRequestMode::class,1);

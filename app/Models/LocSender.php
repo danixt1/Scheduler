@@ -10,6 +10,8 @@ class LocSender extends Model
 {
     protected $table = 'locsenders';
     use HasFactory;
+    protected $fillable = ['isFallback','location_id','sender_id'];
+
     public function location():BelongsTo{
         return $this->belongsTo(Location::class);
     }

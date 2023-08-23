@@ -16,30 +16,33 @@ class LocationController extends ApiController{
     protected function makeChecker(array &$data):Checker{
         $checker = new Checker($data);
 
-        $checker->checkType('name','string');
-        $checker->checkType('data','array');
-        $checker->checkType('type','integer');
+        $checker->
+        checkType('name','string')->
+        checkType('data','array')->
+        checkType('type','integer')->
 
-        $checker->check('name',function ($val){
-            return strlen($val) > 3;
-        });
-        $checker->check('type',function ($val){
-            return LocationBuilder::exist($val);
-        });
-        $checker->check('data',function ($val,&$ret) use ($data){
+        check('name',fn ($val)=>strlen($val) > 3)->
+        check('type',fn ($val)=>LocationBuilder::exist($val))->
+        check('data',function ($val,&$ret) use ($data){
             if(!isset($data['type'])){
                 return false;
             }
             $err = [];
-            $res = LocationBuilder::locationValidator($val,$data['type'],$err);
+            $res = LocationBuilder::validate($val,$data['type'],$err);
             if(!$res){
                 $ret[$err[0]] = $err[1];
             };
             return $res;
-        });
-        $checker->addBuilder('data',function($val){
-            return json_encode($val);
-        });
+        })->
+        addBuilder('data',fn($val)=>LocationBuilder::passToDb($val,$data['type']));
+        
         return $checker;
+    }
+    protected function setItem(){
+        return [
+            "data"=>function($data){
+                return json_decode($data);
+            }
+        ];
     }
 }

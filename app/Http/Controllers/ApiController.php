@@ -10,10 +10,16 @@ use Symfony\Component\HttpFoundation\Response;
 
 abstract class ApiController extends Controller{
     use ApiTrait;
+    protected $onGet = [];
     public function __construct(protected string $model,private $createProps,private $props = ['*']){
+        $this->onGet = $this->setItem();
     }
-    function all(){
-        return response()->json($this->model::all($this->props));
+    function all(Request $request){
+        $data =$this->model::all($this->props)->toArray();
+        foreach ($data as $key => $value) {
+            $data[$key] = $this->buildItem($value);
+        }
+        return response()->json($data);
     }
     function delete(string $item){
         $res = $this->model::destroy($item);
@@ -24,7 +30,7 @@ abstract class ApiController extends Controller{
         if($result == null){
             return $this->response_not_found();
         }
-        return response()->json($result);
+        return response()->json($this->buildItem($result->toArray()));
     }
     protected abstract function makeChecker(array &$data):Checker;
     function create(Request $request){
@@ -36,13 +42,15 @@ abstract class ApiController extends Controller{
             try{
                 $this->model::create($passData);
             }catch(QueryException $e){
-                $code = $e->getCode();
-                if($e->getCode() === $code){
+                if($e->getCode() === 23000){
+                    Log::info($e->getMessage());
                     return $this->response_invalid_foreign_key($e->getMessage());
+                }else{
+                    Log::critical($e->getMessage());
                 }
                 return response('',500);
             }
-            return response('',204);
+            return response('',201);
         }else{
             return $res;
         }
@@ -54,7 +62,17 @@ abstract class ApiController extends Controller{
         $res = $checker->execute($collums);
         if($res == null){
             $setData = $checker->getArray();
-            $val = $this->model::where('id',$item)->update($setData);
+            try {
+                $val = $this->model::where('id',$item)->update($setData);
+            } catch (QueryException $e) {
+                if($e->getCode() === "23000"){
+                    Log::info($e->getMessage());
+                    return $this->response_invalid_foreign_key($e->getMessage());
+                }else{
+                    Log::critical($e->getMessage());
+                }
+                return response('',500);
+            }
             if($val == 0){
                 return $this->response_not_found();
             }
@@ -73,5 +91,14 @@ abstract class ApiController extends Controller{
             };
         };
         return $ret;
+    }
+    protected function setItem(){
+        return [];
+    }
+    private function buildItem(array $item){
+        foreach ($this->onGet as $key => $value) {
+            $item[$key] =isset($item[$key]) ? $value($item[$key],$item):  $value($item);
+        }
+        return $item;
     }
 }

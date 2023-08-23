@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\EventsDataController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\LocSenderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\SenderController;
+use App\Http\Controllers\TimeEventController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -23,7 +26,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 $cruds = [
     ['sender',SenderController::class],
     ['location',LocationController::class],
-    ['locsender',LocSenderController::class]
+    ['locsender',LocSenderController::class],
+    ['timeevent',TimeEventController::class],
+    ['eventsdata',EventsDataController::class]
 ];
 foreach($cruds as $crud){
     $class = $crud[1];

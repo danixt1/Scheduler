@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TimeEvents extends Model
 {
+    protected $fillable = ['date','eventsdata_id','sender_id'];
     protected $table = 'timeevents';
     use HasFactory;
     public function sender():BelongsTo{

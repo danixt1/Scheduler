@@ -1,8 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Response;
-
 class Checker{
     use ApiTrait;
     private $checkers = [];
@@ -13,14 +11,22 @@ class Checker{
         if(!isset($this->checkers[$propName]))
             $this->checkers[$propName] = ['type'=>null,'custom'=>null];
         $this->checkers[$propName]['type'] = $expected;
+        return $this;
     }
+    /**
+     * Add a function to rebuild the specified property to put in db.
+     * @param string $prop the property to change the bas value
+     * @param callable $func returned value from function is passed to db
+     */
     public function addBuilder($prop,$func){
         $this->builders[$prop] = $func;
+        return $this;
     }
     public function check($propName,$func){
         if(!isset($this->checkers[$propName]))
             $this->checkers[$propName] = ['type'=>null,'custom'=>null];
         $this->checkers[$propName]['custom'] = $func;
+        return $this;
     }
     public function execute($props = ['*']){
         $keys = [];

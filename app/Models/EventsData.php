@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EventsData extends Model
 {
+    protected $fillable = ['type','data'];
     protected $table = 'eventsdatas';
     use HasFactory;
     public function TimeEvents():HasMany{

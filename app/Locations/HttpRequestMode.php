@@ -81,6 +81,9 @@ class HttpRequestMode extends \App\Classes\LocationBuilder{
             return false;
         }
     }
+    public static function toDb(array $data): string{
+        return json_encode($data);
+    }
     private function getPutDataIn(){
         if($this->putDataIn === 'default'){
             if($this->method === 'GET'){

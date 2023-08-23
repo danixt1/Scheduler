@@ -9,6 +9,27 @@ class Reminder extends CalendarEventBuilder{
     private string $name;
     private string $desc;
     private int $id; 
+
+    static protected $checker = [
+        "name"=>[
+            'required'=>True,
+            'type'=>'string'
+        ],
+        "description"=>[
+            'required'=>False,
+            'type'=>'string'
+        ]
+    ];
+    public static function isDataValid(array $data, ?array &$ret = null): bool{
+        $res = self::check(self::$checker,$data);
+        if(is_array($ret)){
+            foreach($res as $prop){
+                $ret[] = $prop;
+            };
+        };
+        return $res[0] === 'passed';
+    }
+
     public function __construct(array $data,int $id = -1){
         $this->name = $data[0];
         $this->desc = $data[1];
@@ -28,6 +49,11 @@ class Reminder extends CalendarEventBuilder{
     }
     public function getName(): string{
         return 'reminder';
+    }
+    public static function toDb(array $data): string{
+        $name = $data['name'];
+        $desc = $data['description'];
+        return json_encode([$name,$desc]);
     }
 }
 ?>

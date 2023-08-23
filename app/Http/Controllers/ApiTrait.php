@@ -28,9 +28,13 @@ trait ApiTrait{
         $obj = [
             'error'=>'invalid_data',
             'property'=>$prop,
-            'message'=>"Invalid data in property $prop, please check the documentation"
+            'message'=>"Invalid data in property $prop"
         ];
         if(is_array($additionalInfo)){
+            if(isset($additionalInfo['message'])){
+                $obj['message'] = $additionalInfo['message'];
+                unset($additionalInfo['message']);
+            }
             if(count($additionalInfo) > 0){
                 $obj['info'] = $additionalInfo;
             };

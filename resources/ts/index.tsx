@@ -8,7 +8,7 @@ declare global{
 }
 window.axios = axios;
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
+axios.defaults.maxRate = 3;
 createInertiaApp({
   resolve: (name: string) => {
     const pages = import.meta.glob('./Pages/**/*.js', { eager: true })

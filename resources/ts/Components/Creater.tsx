@@ -1,9 +1,10 @@
-import axios from "axios"
-import React, { ReactNode, useEffect, useState } from "react";
+import axios, { AxiosResponse } from "axios"
+import React, { ReactNode, useEffect, useRef, useState } from "react";
+import {UseFormRegisterReturn, useForm } from "react-hook-form";
 
-export function CreaterUsingButton(){
+export function CreaterUsingButton({close}:{close:(a:boolean)=>void}){
     return (
-    <div className="cr-create-btn">
+    <div className="cr-create-btn" onClick={()=>close(false)}>
         <div>+</div>
     </div>
     )
@@ -11,6 +12,11 @@ export function CreaterUsingButton(){
 export interface Sender{
     name:string,
     id:number
+}
+export interface EventData{
+    id:number
+    type:number
+    data:{name:string,description:string}
 }
 interface BaseInput extends React.HTMLAttributes<HTMLDivElement>{
     title:string
@@ -28,43 +34,113 @@ function BaseInput({title,children,...props}:BaseInput){
     </div>
     )
 }
-function InputZone({title,name,type= 'text',value}:{title:string,name:string,type?:React.HTMLInputTypeAttribute,value?:string}){
+interface InputZoneAttributes extends React.InputHTMLAttributes<HTMLInputElement>{
+    title:string
+    setValue?:()=>void
+    register:UseFormRegisterReturn<any>
+}
+function InputZone({title,setValue,register,...props}:InputZoneAttributes){
+    let startValue = props.value || '';
+    let [value,setter] = setValue ? [startValue,setValue] : useState(startValue);
     return (
         <BaseInput title={title}>
-            <input type={type} name={name} value={value || ''}/>
+            <input {...props} {...register} value={value} onChange={(e)=>{setter(e.target.value)}}/>
         </BaseInput>
     )
 }
-function CreaterWindow(){
-    let [inLoad,setInLoad] = useState(true);
-    let [senderList,setSenderList] = useState([] as Sender[]);
+interface TimedEvent{
+    sender_id:number,
+    date:string,
+    eventsdata_id:number
+}
+interface CreatingEvent extends TimedEvent{
+    eventName:string
+    eventDesc:string
+}
+function MakeForm(){
+
+}
+function SelectWithApiData({path,show,title,register}:{register:UseFormRegisterReturn<any>,path:string,show:(data:any)=>string | false,title:string}){
+    type showItem ={id:number,name:string};
+    let [inLoad,setLoadState] = useState(true);
+    let [dataList,setDataList] = useState([] as showItem[]);
+
+    let actualrequest = useRef(null as null | Promise<AxiosResponse>);
     useEffect(()=>{
-        axios.get('/api/sender').then(e =>{
-            setSenderList(e.data);
-            setInLoad(false);
-        });
+        let prms =actualrequest.current ? actualrequest.current : axios.get('/api/'+path);
+        prms.then(e =>{
+            let items:showItem[] = [];
+            for(const item of e.data){
+                let showName = show(item);
+                if(showName){
+                    items.push({id:item.id,name:showName})
+                }
+            }
+            setLoadState(false);
+            setDataList(items);
+        })
+        if(!actualrequest.current){
+            actualrequest.current = prms;
+            prms.then(()=>{
+                actualrequest.current = null;
+            })
+        }
     },[]);
+    return (
+        <span>
+            <div className="cr-loading" hidden={!inLoad}>Carregando...</div>
+            <BaseInput title={title} hidden={inLoad}>
+                <select {...register}>
+                    <option value="">---</option>
+                    {
+                        dataList.map((e,i) =><option key={'cr-'+path+i} value={e.id}>{e.name}</option>)
+                    }
+                </select>
+            </BaseInput>
+        </span>
+    );
+}
+function CreaterWindow({close}:{close:(a:boolean)=>void}){
+
+    const {register,handleSubmit} = useForm<CreatingEvent>();
+    function submitMarkEvent(t:CreatingEvent){
+        axios.post('api/eventsdata',{
+            type:1,
+            data:{name:t.eventName,description:t.eventDesc || ""}
+        } as EventData).then(e =>{
+            let utcDate = new Date(t.date).toUTCString();
+            axios.post('api/timeevent',{
+                date:utcDate,
+                eventsdata_id:e.data,
+                sender_id:t.sender_id
+            } as TimedEvent).then(e =>{
+                close(true);
+            });
+        })
+    }
+    function showOptEvent(ev:EventData){
+        if(ev.type != 1){
+            return false;
+        }else{
+            return ev.data.name;
+        }
+    }
     return(
-        <div className="cr-backwindow">
+        <div className="cr-backwindow" onClick={(e)=>{if(e.target === e.currentTarget){close(true)}}}>
             <div className="cr-window">
                 <div className="cr-forms">
-                    <h1>Novo Evento</h1>
-                    <div className="cr-senders">
-                        <div hidden={!inLoad}>Carregando...</div>
-                        <BaseInput title="Enviar para:" hidden={inLoad}>
-                            <select name="sender">
-                                {senderList.map((e,i)=>{
-                                    return <option key={'cr-'+i}>{e.name}</option>
-                                })}
-                            </select>
-                        </BaseInput>
+                    
+                    <form onSubmit={handleSubmit(submitMarkEvent)}>
+                        <h1>Novo Evento</h1>
+                        <SelectWithApiData title="Enviar para" 
+                            register={register('sender_id',{required:true,valueAsNumber:true})} path="sender" 
+                            show={(e:Sender)=>{return e.name}}/>
                         <button>Criar novo Sender</button>
-                    </div>
-                    <InputZone name="eventName" title="Nome Do Evento"/>
-                    <InputZone name="description" title="Descrição"/>
-                    <InputZone name="eventDate" title="Data" type="date"/>
-
-                    <button>Salvar Evento</button>
+                        <InputZone register={register('eventName',{required:true})} title="Nome" type="text"/>
+                        <InputZone register={register('eventDesc',{required:false})} title="Descrição" type="text"/>
+                        <InputZone register={register('date',{required:true})} title="Data" type="datetime-local"/>
+                        <input type="submit" value="Salvar Evento"/>
+                    </form>
                 </div>
             </div>
         </div>
@@ -89,11 +165,11 @@ function Sender(){
     )
 }
 export default function Creater(){
-
+    const [isClosed,setCloseState] = useState(false);
     return (
         <div>
-            <CreaterWindow/>
-            <CreaterUsingButton/>
+            {isClosed ? '' : <CreaterWindow close={setCloseState}/>}
+            <CreaterUsingButton close={setCloseState}/>
         </div>
     )
 }

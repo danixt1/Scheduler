@@ -40,7 +40,7 @@ abstract class ApiController extends Controller{
         if(!$res){
             $passData = $checker->getArray();
             try{
-                $this->model::create($passData);
+                $info =$this->model::create($passData);
             }catch(QueryException $e){
                 if($e->getCode() === 23000){
                     Log::info($e->getMessage());
@@ -50,7 +50,7 @@ abstract class ApiController extends Controller{
                 }
                 return response('',500);
             }
-            return response('',201);
+            return response($info->id,201);
         }else{
             return $res;
         }

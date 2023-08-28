@@ -35,7 +35,7 @@ abstract Class ApiCase extends TestCase{
         foreach ($info as $create) {
             $expect = $create['expected'];
             $toSend = $create['send'];
-            $response =  $this->post("api/$entrypoint",$toSend);
+            $response =  $this->post("api/v1/$entrypoint",$toSend);
             //stringfy arrays in "toSend"
             foreach ($toSend as $key => $value) {
                 if(gettype($value) === 'array'){
@@ -73,7 +73,7 @@ abstract Class ApiCase extends TestCase{
                 $getters[] = $data->id;
             }
         };
-        $resp = $this->get("/api/$entrypoint");
+        $resp = $this->get("/api/v1/$entrypoint");
         $resp->assertOk();
         $json = $resp->json();
         $this->assertEquals(count($getters),count($json));
@@ -92,7 +92,7 @@ abstract Class ApiCase extends TestCase{
             $send = $act['send'];
             $expected = $act['expected'];
             Log::info("TEST UPDATE in $entrypoint/".$model->id);
-            $resp = $this->post("/api/$entrypoint/".$model->id,$send);
+            $resp = $this->post("/api/v1/$entrypoint/".$model->id,$send);
             $this->isExpected($resp,$expected);
         };
     }
@@ -100,7 +100,7 @@ abstract Class ApiCase extends TestCase{
         $this->refreshTestDatabase();
         $entrypoint = $this->apiName();
         $model = $this->apiDelete();
-        $this->delete("/api/$entrypoint/".$model->id);
+        $this->delete("/api/v1/$entrypoint/".$model->id);
         Log::info("TEST DELETE in $entrypoint/".$model->id);
         $this->assertModelMissing($model);
     }

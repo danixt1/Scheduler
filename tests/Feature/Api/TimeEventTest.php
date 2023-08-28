@@ -12,7 +12,7 @@ class TimeEventTest extends ApiCase{
         return TimeEvents::class;
     }
     function apiName(): string{
-        return "timeevent";
+        return "events/timers";
     }
     function apiCreate(): array{
         $ev = EventsData::factory()->create()->id;

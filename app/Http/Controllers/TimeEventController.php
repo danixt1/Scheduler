@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\TimeEvents;
 use DateTime;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 
-class TimeEventController extends ApiController
-{
+class TimeEventController extends ApiController{
+    use GetDataInModel;
+    protected string $model = TimeEvents::class;
+
     public function __construct(){
         parent::__construct(
-            TimeEvents::class,
             ['date','eventsdata_id','sender_id'],
             ['id','date','eventsdata_id','sender_id']
         );
@@ -30,5 +32,11 @@ class TimeEventController extends ApiController
             }
         })->addBuilder('date',fn($date)=>(new DateTime($date))->format(DB_DATETIME_PATTERN));
         return $checker;
+    }
+    protected function setItem(){
+        return [
+            'data'=>fn($data)=>URL::to("/api/v1/events/datas/".$data['eventsdata_id']),
+            'sender'=>fn($data)=>URL::to("/api/v1/senders/".$data['sender_id'])
+        ];
     }
 }

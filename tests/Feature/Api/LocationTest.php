@@ -11,7 +11,7 @@ class LocationTest extends ApiCase{
         return Location::class;
     }
     function apiName(): string{
-        return 'location';
+        return 'locations';
     }
     function apiCreate(): array{
         return [

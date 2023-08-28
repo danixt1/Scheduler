@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\SenderController;
 use App\Http\Controllers\TimeEventController;
+use App\Http\Controllers\UniqueEventsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,21 +24,25 @@ use App\Http\Controllers\TimeEventController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-$cruds = [
-    ['sender',SenderController::class],
-    ['location',LocationController::class],
-    ['locsender',LocSenderController::class],
-    ['timeevent',TimeEventController::class],
-    ['eventsdata',EventsDataController::class]
-];
-foreach($cruds as $crud){
-    $class = $crud[1];
-    Route::prefix($crud[0])->middleware("cache.headers:private;max_age=5")->group(function() use ($class){
-        Route::get('/',[$class,'all']);
-        Route::post('/',[$class,'create']);
-        
-        Route::post('/{item}',[$class,'update']);
-        Route::get('/{item}',[$class,'get']);
-        Route::delete('/{item}',[$class,'delete']);
-    });
+$makeRoutes = function(array $cruds,string $version){
+    foreach($cruds as $crud){
+        $class = $crud[1];
+        Route::prefix($version.'/'.$crud[0])->middleware("cache.headers:private;max_age=5")->group(function() use ($class){
+            Route::get('/',[$class,'all']);
+            Route::post('/',[$class,'create']);
+            
+            Route::post('/{item}',[$class,'update']);
+            Route::get('/{item}',[$class,'get']);
+            Route::delete('/{item}',[$class,'delete']);
+        });
+    };
 };
+$crudsV1 = [
+    ['events/uniques',UniqueEventsController::class],
+    ['events/datas',EventsDataController::class],
+    ['events/timers',TimeEventController::class],
+    ['senders',SenderController::class],
+    ['locations',LocationController::class],
+    ['locsenders',LocSenderController::class]
+];
+$makeRoutes($crudsV1,'v1');

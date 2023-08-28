@@ -32,7 +32,7 @@ class SenderTest extends ApiCase{
         return Sender::class;
     }
     function apiName(): string{
-        return 'sender';
+        return 'senders';
     }
     function apiRead(): array{
         return [Sender::factory(1)->create()];

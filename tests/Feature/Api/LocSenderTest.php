@@ -12,7 +12,7 @@ class LocSenderTest extends ApiCase{
         return LocSender::class;
     }
     function apiName(): string{
-        return "locsender";
+        return "locsenders";
     }
     function apiCreate(): array{
         $location = Location::factory()->create();

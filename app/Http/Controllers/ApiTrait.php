@@ -2,6 +2,17 @@
 namespace App\Http\Controllers;
 
 trait ApiTrait{
+    private function filter(array $data){
+        $ret = [];
+        foreach ($this->createProps as $value) {
+            if(!isset($data[$value])){
+                continue;
+            }else{
+                $ret[$value] = $data[$value]; 
+            };
+        };
+        return $ret;
+    }
     function response_invalid_type($propName,$expected,$passed){
         return response()->json([
             'error'=>'invalid_data',

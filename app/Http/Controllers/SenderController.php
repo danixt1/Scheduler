@@ -6,10 +6,11 @@ use App\Models\Sender;
 use Illuminate\Http\JsonResponse;
 
 class SenderController extends ApiController{
-    use ApiTrait;
+    use GetDataInModel;
+    protected string $model = Sender::class;
     public function __construct()
     {
-        parent::__construct(Sender::class,['name'],['id','name']);
+        parent::__construct(['name'],['id','name']);
     }
     protected function makeChecker(array &$data): Checker
     {

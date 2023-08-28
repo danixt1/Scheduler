@@ -1,46 +1,70 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\Location;
-use Exception;
+use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
-abstract class ApiController extends Controller{
+interface Icrud{
+    function all(Request $request):Response;
+    function create(Request $request):Response | ResponseFactory;
+    function get(string $item): Response | ResponseFactory;
+    function delete(string $item):Response|ResponseFactory;
+    function update(Request $request,string $item):Response|ResponseFactory;
+}
+abstract class ApiController extends Controller implements Icrud{
     use ApiTrait;
-    protected $onGet = [];
-    public function __construct(protected string $model,private $createProps,private $props = ['*']){
+    private $onGet = [];
+    private $skipBuild = False;
+    protected $removeBeforeSend = [];
+
+    public function __construct(private $createProps,protected $props = ['*']){
         $this->onGet = $this->setItem();
+        if(count($this->onGet) == 0){
+            $this->skipBuild = True;
+        }
     }
-    function all(Request $request){
-        $data =$this->model::all($this->props)->toArray();
-        foreach ($data as $key => $value) {
-            $data[$key] = $this->buildItem($value);
+    abstract protected function data_all():array;
+    abstract protected function data_destroy(string $item):int;
+    abstract protected function data_item(string $item):null | array;
+    abstract protected function data_create(array $data):int;
+    /** Return the quantity of updated items */
+    abstract protected function data_update(string $id,array $dataToSet):int;
+
+    function all(Request $request):Response{
+        $data =$this->data_all();
+        if(!$this->skipBuild){
+            foreach ($data as $key => $value) {
+                $data[$key] = $this->buildItem($value);
+            }
         }
         return response()->json($data);
     }
-    function delete(string $item){
-        $res = $this->model::destroy($item);
+    function delete(string $item):Response{
+        $res = $this->data_destroy($item);
         return $res == 1 ? response('',204) : $this->response_not_found();
     }
-    function get(string $item){
-        $result = $this->model::find((int)$item);
+    function get(string $item):Response{
+        $result = $this->data_item($item);
         if($result == null){
             return $this->response_not_found();
         }
-        return response()->json($this->buildItem($result->toArray()));
+        if(!$this->skipBuild){
+            $result = $this->buildItem($result);
+        }
+        return response()->json($result);
     }
     protected abstract function makeChecker(array &$data):Checker;
-    function create(Request $request){
+    function create(Request $request):Response{
         $data =$this->filter($request->all());
         $checker = $this->makeChecker($data);
         $res =$checker->execute();
         if(!$res){
             $passData = $checker->getArray();
             try{
-                $info =$this->model::create($passData);
+                $info =$this->data_create($passData);
             }catch(QueryException $e){
                 if($e->getCode() === 23000){
                     Log::info($e->getMessage());
@@ -50,12 +74,12 @@ abstract class ApiController extends Controller{
                 }
                 return response('',500);
             }
-            return response($info->id,201);
+            return response($info,201);
         }else{
             return $res;
         }
     }
-    function update(Request $request,string $item){
+    function update(Request $request,string $item):Response{
         $data =$this->filter($request->all());
         $checker = $this->makeChecker($data);
         $collums = array_keys($data);
@@ -63,7 +87,7 @@ abstract class ApiController extends Controller{
         if($res == null){
             $setData = $checker->getArray();
             try {
-                $val = $this->model::where('id',$item)->update($setData);
+                $val =$this->data_update($item,$setData);
             } catch (QueryException $e) {
                 if($e->getCode() === "23000"){
                     Log::info($e->getMessage());
@@ -80,17 +104,6 @@ abstract class ApiController extends Controller{
         }else{
             return $res;
         }
-    }
-    private function filter(array $data){
-        $ret = [];
-        foreach ($this->createProps as $value) {
-            if(!isset($data[$value])){
-                continue;
-            }else{
-                $ret[$value] = $data[$value]; 
-            };
-        };
-        return $ret;
     }
     protected function setItem(){
         return [];

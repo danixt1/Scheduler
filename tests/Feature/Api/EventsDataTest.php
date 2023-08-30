@@ -10,7 +10,7 @@ class EventsDataTest extends ApiCase{
         return EventsData::class;
     }
     function apiName(): string{
-        return "events/datas";
+        return "events/data";
     }
     function apiCreate(): array{
         return [

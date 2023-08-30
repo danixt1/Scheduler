@@ -8,26 +8,34 @@ use App\Models\TimeEvents;
 use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 
-class UniqueEventsController extends ApiController{
-    protected $props = ['timeevents.id','date','eventsdata_id','sender_id','type','data',
-    'eventsdatas.created_at','eventsdatas.updated_at'];
-
+class CalenderEventsController extends ApiController{
+    protected $filterOnSend = ['sender_id','eventsdata_id'];
     function __construct(){
-        parent::__construct(['name','sender_id','description']);
+        parent::__construct(['data','sender_id','date','type'],['timeevents.id','date','eventsdata_id','sender_id','type','data']);
     }
     protected function makeChecker(array &$data):Checker{
-        if(!isset($data['description'])){
-            $data['description'] = '';
-        }
         $checker = new Checker($data);
         $checker->
-            checkType('name','string')->
             checkType('date','string')->
-            checkType('description','string')->
+            checkType('data','array')->
             checkType('sender_id','integer')->
-            addBuilder('date',fn($date)=>(new \DateTime($date))->format(DB_DATETIME_PATTERN));
+            check('data',function ($val,&$ret) use ($data){
+                if(!isset($data['type'])){
+                    $ret =["message"=> '"type" property is required to update/create'];
+                    return false;
+                };
+                $type = $data['type'];
+                $res = CalendarEventBuilder::validate($val,$type);
+                return $res;
+            })->
+            addBuilder('date',fn($date)=>(new \DateTime($date))->format(DB_DATETIME_PATTERN))->
+            addBuilder('data',function($val) use ($data){
+                return CalendarEventBuilder::passToDb($val,$data['type']);
+            });
         return $checker;
     }
     protected function data_all():array{
@@ -45,7 +53,7 @@ class UniqueEventsController extends ApiController{
     protected function data_item(string $item):null | array{
         $val = DB::table('timeevents')->
             join('eventsdatas','timeevents.eventsdata_id','=','eventsdatas.id')->
-            select($this->props)->where('timeevents.id',$item)->first();
+            where('timeevents.id',$item)->get($this->props)->first();
 
         return $val ? (array)$val: null;
     }
@@ -54,15 +62,15 @@ class UniqueEventsController extends ApiController{
         try {
             $ev =EventsData::create([
                 'type'=>1,
-                'data'=>json_encode([$data['name'],$data['description']])
+                'data'=>$data['data']
             ]);
-            TimeEvents::create([
+            $te = TimeEvents::create([
                 'date'=>$data['date'],
                 'eventsdata_id'=>$ev->id,
-                'sender_id'=>$data['id']
+                'sender_id'=>$data['sender_id']
             ]);
             DB::commit();
-            return $ev->id;
+            return $te->id;
         } catch (\Throwable $th) {
             DB::rollBack();
             throw $th;
@@ -73,6 +81,9 @@ class UniqueEventsController extends ApiController{
     }
     protected function setItem(){
         return [
+            'timer'=>fn($item)=>URL::to('api/v1/events/timers/'.$item['id']),
+            'event'=>fn($item)=>URL::to('api/v1/events/data/'.$item['eventsdata_id']),
+            'sender'=>fn($item)=>URL::to('api/v1/senders/'.$item['sender_id']),
             'data'=>fn($data,$item)=>CalendarEventBuilder::create(json_decode($data),$item['type'])->getData()
         ];
     }

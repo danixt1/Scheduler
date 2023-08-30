@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\URL;
 class TimeEventController extends ApiController{
     use GetDataInModel;
     protected string $model = TimeEvents::class;
-
+    protected $filterOnSend = ['eventsdata_id','sender_id'];
     public function __construct(){
         parent::__construct(
             ['date','eventsdata_id','sender_id'],
@@ -35,7 +35,7 @@ class TimeEventController extends ApiController{
     }
     protected function setItem(){
         return [
-            'data'=>fn($data)=>URL::to("/api/v1/events/datas/".$data['eventsdata_id']),
+            'data'=>fn($data)=>URL::to("/api/v1/events/data/".$data['eventsdata_id']),
             'sender'=>fn($data)=>URL::to("/api/v1/senders/".$data['sender_id'])
         ];
     }

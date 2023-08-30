@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ abstract class ApiController extends Controller implements Icrud{
     use ApiTrait;
     private $onGet = [];
     private $skipBuild = False;
-    protected $removeBeforeSend = [];
+    protected $filterOnSend = [];
 
     public function __construct(private $createProps,protected $props = ['*']){
         $this->onGet = $this->setItem();
@@ -34,19 +35,30 @@ abstract class ApiController extends Controller implements Icrud{
     abstract protected function data_update(string $id,array $dataToSet):int;
 
     function all(Request $request):Response{
-        $data =$this->data_all();
-        if(!$this->skipBuild){
-            foreach ($data as $key => $value) {
-                $data[$key] = $this->buildItem($value);
+        $all =Cache::get($this::class,function(){
+            $data =$this->data_all();
+            if(!$this->skipBuild){
+                foreach ($data as $key => $value) {
+                    $data[$key] = $this->buildItem($value);
+                }
             }
-        }
-        return response()->json($data);
+            foreach ($data as $key => $value) {
+                $data[$key] = $this->outputItem($value);
+            }
+            Cache::put($this::class,$data,1);
+            return $data;
+        });
+        return response()->json($all);
     }
     function delete(string $item):Response{
         $res = $this->data_destroy($item);
         return $res == 1 ? response('',204) : $this->response_not_found();
     }
     function get(string $item):Response{
+        $get = Cache::get($this::class.$item);
+        if($get)
+            return response()->json($get);
+
         $result = $this->data_item($item);
         if($result == null){
             return $this->response_not_found();
@@ -54,7 +66,18 @@ abstract class ApiController extends Controller implements Icrud{
         if(!$this->skipBuild){
             $result = $this->buildItem($result);
         }
+        $result =  $this->outputItem($result);
+        Cache::put($this::class.$item,$result,1);
         return response()->json($result);
+    }
+    private function outputItem(array &$item){
+        $name =isset($item['id']) ? $this::class.$item['id'] : null;
+        foreach ($this->filterOnSend as $value) {
+            unset($item[$value]);
+        }
+        if(!$name)
+            Cache::put($name,$item);
+        return $item;
     }
     protected abstract function makeChecker(array &$data):Checker;
     function create(Request $request):Response{

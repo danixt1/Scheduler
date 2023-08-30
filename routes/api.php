@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\SenderController;
 use App\Http\Controllers\TimeEventController;
-use App\Http\Controllers\UniqueEventsController;
+use App\Http\Controllers\CalenderEventsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,8 +38,8 @@ $makeRoutes = function(array $cruds,string $version){
     };
 };
 $crudsV1 = [
-    ['events/uniques',UniqueEventsController::class],
-    ['events/datas',EventsDataController::class],
+    ['events/calendar',CalenderEventsController::class],
+    ['events/data',EventsDataController::class],
     ['events/timers',TimeEventController::class],
     ['senders',SenderController::class],
     ['locations',LocationController::class],

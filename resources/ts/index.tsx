@@ -14,7 +14,7 @@ createInertiaApp({
     const pages = import.meta.glob('./Pages/**/*.js', { eager: true })
     return pages[`./Pages/${name}.js`]
   },
-  setup({ el, App, props }:{el:Element,App:new()=>React.Component,props:any}) {
+  setup({ el, App, props }:{el:Element,App:any,props:any}) {
     document.body.className = 'light'
     createRoot(el).render(
       <StrictMode>

@@ -1,5 +1,5 @@
 import {useContext} from "react"
-import {CalendarEvent, CalendarEventContext } from "../contexts.js"
+import { CalendarEvent, CalendarEventContext } from "../contexts";
 //import "../../css/eventList.css"
 function EventItem({ev,monthMode}:{ev:CalendarEvent,monthMode:boolean}){
     const {title,date,desc} = ev;

@@ -1,5 +1,5 @@
-import { CalendarEvent, CalendarEventContext } from "../contexts.js";
 import {RefObject, createRef, useContext,useEffect,useState} from 'react'
+import { CalendarEvent, CalendarEventContext } from '../contexts'
 
 interface DayInfoWithEvents{
     day:number

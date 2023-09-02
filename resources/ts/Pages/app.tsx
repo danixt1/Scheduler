@@ -2,8 +2,9 @@ import { Head } from '@inertiajs/react'
 import Calendar from '../Components/Calendar.js';
 import { CalendarEvent, CalendarEventContext } from '../contexts.js';
 import { EventsList } from '../Components/EventsList.js';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import Creater from '../Components/Creater.js';
+import { API } from '../Api/index.js';
 interface PassedEvents{
     date:string,
     type:'reminder',
@@ -12,17 +13,22 @@ interface PassedEvents{
 }
 export default function App({errors,events:_evs}:{errors:any,events:PassedEvents[]}){
     let evs:CalendarEvent[] = [];
-    
-    _evs.map(e =>{
-        evs.push({
-            date:new Date(e.date + ' UTC'),
-            desc:e.desc,
-            title:e.name,
-            type:e.type
-        })
-    })
     let [events,setEvents] = useState(evs);
+    useEffect(()=>{
+        API.events.calendar().then(e =>{
+            for(const event of e.list){
+                evs.push({
+                    date:event.date,
+                    desc:event.data.description,
+                    title:event.data.name,
+                    type:"reminder"
+                })
+            }
+            setEvents([...evs]);
+        })
+    },[]);
     let eventer = {events,setEvents}
+    let actDay = new Date();
     return (
         <>
         <Head title="Testing"/>
@@ -33,7 +39,7 @@ export default function App({errors,events:_evs}:{errors:any,events:PassedEvents
                         <EventsList/>
                     </div>
                     <div className='app-pt2'>
-                        <Calendar month={2} year={2023} showTop={false} selected={1}></Calendar>
+                        <Calendar month={actDay.getMonth() + 1} year={actDay.getFullYear()} showTop={false} selected={actDay.getDate()}></Calendar>
                     </div>
                 </CalendarEventContext.Provider>
             </div>

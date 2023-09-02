@@ -1,7 +1,8 @@
 import axios, { AxiosResponse } from "axios"
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import {UseFormRegisterReturn, useForm } from "react-hook-form";
-import { API } from "../Api.js";
+import { API } from "../Api";
+
 
 export function CreaterUsingButton({close}:{close:(a:boolean)=>void}){
     return (
@@ -64,10 +65,9 @@ function SelectWithApiData({reqTo,show,title,register}:{register:UseFormRegister
     type showItem ={id:number,name:string};
     let [inLoad,setLoadState] = useState(true);
     let [dataList,setDataList] = useState([] as showItem[]);
-
-    let actualrequest = useRef(null as null | Promise<any>);
+    
     useEffect(()=>{
-        let prms =actualrequest.current ? actualrequest.current : reqTo()
+        let prms =reqTo();
         prms.then(e =>{
             let items:showItem[] = [];
             for(const item of e.list){
@@ -79,12 +79,6 @@ function SelectWithApiData({reqTo,show,title,register}:{register:UseFormRegister
             setLoadState(false);
             setDataList(items);
         })
-        if(!actualrequest.current){
-            actualrequest.current = prms;
-            prms.then(()=>{
-                actualrequest.current = null;
-            })
-        }
     },[]);
     return (
         <span>
@@ -104,17 +98,16 @@ function CreaterWindow({close}:{close:(a:boolean)=>void}){
 
     const {register,handleSubmit} = useForm<CreatingEvent>();
     function submitMarkEvent(t:CreatingEvent){
-        let utcDate = new Date(t.date).toUTCString();
-        
+
         API.events.calendar({
             type:1,
             data:{
                 name:t.eventName,
                 description:t.eventDesc || ''
             },
-            date:utcDate,
+            date:new Date(t.date),
             sender_id:t.sender_id
-        }).then(()=>{
+        }).then((e)=>{
             close(true);
         })
     }

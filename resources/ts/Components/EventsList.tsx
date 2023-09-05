@@ -1,7 +1,12 @@
 import {useContext} from "react"
 import { CalendarEvent, CalendarEventContext } from "../contexts";
 //import "../../css/eventList.css"
-function EventItem({ev,monthMode}:{ev:CalendarEvent,monthMode:boolean}){
+interface EventData{
+    title:string,
+    date:Date,
+    desc:string
+}
+function EventItem({ev,monthMode}:{ev:EventData,monthMode:boolean}){
     const {title,date,desc} = ev;
     const d = date.getDate(),y = date.getFullYear(),m = date.getMonth();
     let description = desc || ''
@@ -18,12 +23,17 @@ function EventItem({ev,monthMode}:{ev:CalendarEvent,monthMode:boolean}){
     </div>
     )
 }
-export function EventsList({monthMode = true}:{monthMode?:boolean}){
+export function EventsList({month}:{month?:number}){
 
     const {events} =useContext(CalendarEventContext);
+    const useEvs =month ?events.filter(d =>d.date.getMonth() + 1 == month) : events;
+    const monthMode = typeof month === 'number';
     return (
         <div className="itemList">
-            {events.map((e,n) =><EventItem ev={e} monthMode={monthMode} key={'EvIt'+n+'-'+Math.random().toFixed(8)}/>)}
+            {useEvs.map((e,n) =><EventItem 
+            ev={{date:e.date,desc:e.data.description,title:e.data.name}} 
+            monthMode={monthMode} 
+            key={'EvIt'+n+'-'+Math.random().toFixed(8)}/>)}
         </div>
     )
 }

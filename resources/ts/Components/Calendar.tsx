@@ -1,12 +1,14 @@
-import {RefObject, createRef, useContext,useEffect,useState} from 'react'
+import {Children, ReactNode, RefObject, createRef, useContext,useEffect,useState} from 'react'
 import { CalendarEvent, CalendarEventContext } from '../contexts'
+import { ApiItem } from '../Api/Api'
+import { ItemEvCalendar } from '../Api/Items'
 
 interface DayInfoWithEvents{
     day:number
     inMonth:boolean
     selected?:boolean
     /**Show the events in day */
-    events:CalendarEvent[]
+    events:ApiItem<ItemEvCalendar>[]
 }
 const days = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sabádo"]
 const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
@@ -30,17 +32,17 @@ function getMonth(month:number,year:number){
     var first = new Date(year,month,1);
     return [laster.getDate(),first.getDay()];
 }
-//TODO make new system to pass if the select day is in actual month or in the before/next month
-function getMonthData(month:number,year:number,selected?:number,events?:CalendarEvent[]){
+function getMonthData(month:number,year:number,selected:number | null = null,events:ApiItem<ItemEvCalendar>[]){
     let monthInfo = getMonth(month,year);
-    let before = getMonth(month == 1 ? 12 : month -1,year)[0] - monthInfo[1];
-    let evs = events || [];
+    let before = getMonth(month,year)[0] - monthInfo[1];
+    let evs = events.filter(e => e.date.getMonth() + 1 === month && e.date.getFullYear() === year);
+    
     let weeks:DayInfoWithEvents[][] = [];
     let startCounting = false;
     let actualDay = 1;
     let week:DayInfoWithEvents[] =[]
     let nexter = 1;
-
+    
     for(let act =0; act < 7;act++){
         if(monthInfo[1] === act){
             startCounting = true;
@@ -70,7 +72,7 @@ function getMonthData(month:number,year:number,selected?:number,events?:Calendar
     return weeks;
     function addDayToWeek(day:number,inMonth:boolean){
         let actSelected = inMonth ? day === selected : false;
-        let evsFromDay:CalendarEvent[] =inMonth ? evs.filter(({date}) =>date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) : []
+        let evsFromDay:ApiItem<ItemEvCalendar>[] =inMonth ? evs.filter(({date}) =>date.getDate() === day) : []
         let obj:DayInfoWithEvents ={
             day,
             inMonth,
@@ -80,38 +82,17 @@ function getMonthData(month:number,year:number,selected?:number,events?:Calendar
         week.push(obj);
     }
 }
-export default function Calendar({month,year,selected, showTop=true}:{month:number,year:number,selected?:number,showTop?:boolean}){
+export default function Calendar({month,year,selected = null, showTop=true,children = []}:{month:number,year:number,selected?:number | null,showTop?:boolean,children:ReactNode}){
     let [date,setDate] = useState({month,year});
     let {events} = useContext(CalendarEventContext)
-    let [weeks,setWeeks] = useState(getMonthData(month,year,selected,events))
-    function updCalendar(make:'add'|'rem'){
-        let date =updMonth(make);
-        setWeeks(getMonthData(date.month,date.year,(date.month == month && date.year == year ? selected:undefined),events));
-    }
-    function updMonth(make:'add'|'rem'){
-        var op = make === 'add' ? 1 : -1;
-        let newMonth = date.month + op;
-        let actualSetter;
-        if(newMonth > 12){
-            actualSetter = {month:1,year:++date.year};
-            setDate(actualSetter);
-            return actualSetter;
-        };
-        if(newMonth < 1){
-            actualSetter = {month:12,year:--date.year}
-            setDate(actualSetter);
-            return actualSetter;
-        };
-        actualSetter = {month:newMonth,year:date.year};
-        setDate(actualSetter);
-        return actualSetter;
-    }
+    let [weeks,setWeeks] = useState(getMonthData(month,year,selected,[]))
+    useEffect(()=>{
+        setWeeks(getMonthData(month,year,selected,events));
+    },[events,month,year]);
     return (
         <div className="cl-content">
             <div className="cl-top">
-                <div className="cl-btn cl-before" onClick={(ev)=>{updCalendar('rem')}}>{'<'}</div>
-                <div className="cl-title">{months[date.month - 1] + ' '+date.year}</div>
-                <div className="cl-btn cl-after" onClick={(ev)=>{updCalendar('add')}} >{'>'}</div>
+                {children}
             </div>
             <table className="cl">
                 <thead className="cl-days">

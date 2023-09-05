@@ -1,16 +1,9 @@
 import axios, { AxiosResponse } from "axios"
-import React, { ReactNode, useEffect, useRef, useState } from "react";
+import React, { ReactNode, useContext, useEffect, useRef, useState } from "react";
 import {UseFormRegisterReturn, useForm } from "react-hook-form";
 import { API } from "../Api";
+import { CalendarEventContext } from "../contexts";
 
-
-export function CreaterUsingButton({close}:{close:(a:boolean)=>void}){
-    return (
-    <div className="cr-create-btn" onClick={()=>close(false)}>
-        <div>+</div>
-    </div>
-    )
-}
 export interface Sender{
     name:string,
     id:number
@@ -24,6 +17,18 @@ interface BaseInput extends React.HTMLAttributes<HTMLDivElement>{
     title:string
     children:ReactNode
 }
+interface InputZoneAttributes extends React.InputHTMLAttributes<HTMLInputElement>{
+    title:string
+    setValue?:()=>void
+    register:UseFormRegisterReturn<any>
+}
+export function CreaterUsingButton({close}:{close:(a:boolean)=>void}){
+    return (
+    <div className="cr-create-btn" onClick={()=>close(false)}>
+        <div>+</div>
+    </div>
+    )
+}
 function BaseInput({title,children,...props}:BaseInput){
     return (
     <div className="cr-box-input" {...props}>
@@ -35,11 +40,6 @@ function BaseInput({title,children,...props}:BaseInput){
         </div>
     </div>
     )
-}
-interface InputZoneAttributes extends React.InputHTMLAttributes<HTMLInputElement>{
-    title:string
-    setValue?:()=>void
-    register:UseFormRegisterReturn<any>
 }
 function InputZone({title,setValue,register,...props}:InputZoneAttributes){
     let startValue = props.value || '';
@@ -95,10 +95,9 @@ function SelectWithApiData({reqTo,show,title,register}:{register:UseFormRegister
     );
 }
 function CreaterWindow({close}:{close:(a:boolean)=>void}){
-
+    let {setEvents} = useContext(CalendarEventContext);
     const {register,handleSubmit} = useForm<CreatingEvent>();
     function submitMarkEvent(t:CreatingEvent){
-
         API.events.calendar({
             type:1,
             data:{
@@ -109,14 +108,8 @@ function CreaterWindow({close}:{close:(a:boolean)=>void}){
             sender_id:t.sender_id
         }).then((e)=>{
             close(true);
+            setEvents(evs =>[...evs,e]);
         })
-    }
-    function showOptEvent(ev:EventData){
-        if(ev.type != 1){
-            return false;
-        }else{
-            return ev.data.name;
-        }
     }
     return(
         <div className="cr-backwindow" onClick={(e)=>{if(e.target === e.currentTarget){close(true)}}}>

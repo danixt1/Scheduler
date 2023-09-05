@@ -16,7 +16,7 @@ export function buildApi(routes:Routes){
             itemName = value;
         }else{
             itemName = value.name;
-            build = value.output;
+            build = value.output || {};
             inputer = value.input || {};
             if(value.ref){
                 for(const ref of value.ref){
@@ -64,12 +64,11 @@ export function buildFuncApi(route:string,builds?:any,inputers?:any):FuncApi<any
         return buildApiItem(transform(data),path,inputers,builds);
     }
     function transform(item:any){
-        if(builds){
-            for(const [index,value] of Object.entries<(a:any)=>any>(builds)){
-                item[index] = value(item[index]);
-            }
-        };
-        return item;
+        let finalITem:any = {};
+        for(const [index,value] of Object.entries(item)){
+            finalITem[index] = builds[index] ? builds[index](value) : value;
+        }
+        return finalITem;
     }
 }
 export function buildApiItem(data:any,path:string,setter:{[index:string]:InputerFunc} = {},out:any = {}){
@@ -143,13 +142,19 @@ export function buildApiItem(data:any,path:string,setter:{[index:string]:Inputer
     return info;
 }
 export function buildRefProperty(link:string){
-    let url = new URL(link);
-    let last = url.pathname.lastIndexOf('/');
+    let url:URL;
+    try{
+        url =new URL(link);
+    }catch(error:any){
+        throw new Error('Invalid passed link, link:'+link+' not is vaalid');
+    }
+    let pathname = url.pathname;
+    let last = pathname.lastIndexOf('/');
     
-    let id =Number.parseInt(url.pathname.substring(last + 1));
+    let id =Number.parseInt(pathname.substring(last + 1));
     return {
         id,
-        get:()=>allRoutes[url.pathname.substring(0,last)](id)
+        get:()=>allRoutes[pathname.substring(0,last)](id)
     }
 }
 function get(path:string,data:any = undefined):Promise<AxiosResponse>{

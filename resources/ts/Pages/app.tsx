@@ -1,12 +1,12 @@
 import { Head } from '@inertiajs/react'
 import Calendar from '../Components/Calendar.js';
-import { CalendarEvent, CalendarEventContext } from '../contexts.js';
+import {  CalendarEventContext } from '../contexts.js';
 import { EventsList } from '../Components/EventsList.js';
 import {useEffect, useRef, useState} from 'react';
-import Creater from '../Components/Creater.js';
 import { API } from '../Api/index.js';
 import { ApiItem } from '../Api/Api.js';
 import { ItemEvCalendar } from '../Api/Items.js';
+import Creater from '../Components/Creater/index.js';
 
 const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
 interface PassedEvents{

@@ -1,5 +1,5 @@
 import {Children, ReactNode, RefObject, createRef, useContext,useEffect,useState} from 'react'
-import { CalendarEvent, CalendarEventContext } from '../contexts'
+import { CalendarEventContext } from '../contexts'
 import { ApiItem } from '../Api/Api'
 import { ItemEvCalendar } from '../Api/Items'
 

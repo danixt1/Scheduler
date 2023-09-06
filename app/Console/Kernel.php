@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
         $schedule->call(function(){
             Log::info('Scheduler:Starting check of events to fire');
             $result =  TimeEvent::extractFromDb();
+            Log::info('Schedluler:finished',['results'=>$result]);
             
         })->everyMinute()->name('check fired events')->onOneServer();
     }

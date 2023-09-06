@@ -98,6 +98,7 @@ class TimeEvent{
             $timedEvent->fire($actionProcessor);
         }
         $actionProcessor->execute();
+        return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents];
     }
     public static function runQuery(DateTime $date = null){
         $query =DB_QUERY.($date === null ? '' : ' WHERE te.date < ?'). ' ORDER BY id;';

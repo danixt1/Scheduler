@@ -1,5 +1,5 @@
 import {useContext} from "react"
-import { CalendarEvent, CalendarEventContext } from "../contexts";
+import { CalendarEventContext } from "../contexts";
 //import "../../css/eventList.css"
 interface EventData{
     title:string,

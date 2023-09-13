@@ -2,24 +2,53 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\Location;
 use App\Models\Sender;
 use Illuminate\Database\Eloquent\Model;
 
 class SenderTest extends ApiCase{
 
     function apiCreate(): array{
+        $valid = Location::factory()->create();
+        $others = Location::factory(5)->create()->map(fn($item)=>$item->id);
         return [
             [
                 "send"=>[
-                    "name"=>'test_name'
+                    "name"=>'fail test',
+                    "ids"=>$others->toArray()
                 ],
                 "expected"=>[
-                    "CREATED"
+                    "BAD_REQUEST",['error'=>'invalid_data','property'=>'ids']
                 ]
             ],
             [
                 "send"=>[
-                    "name"=>22
+                    "name"=>'other_test',
+                    "ids"=>[$valid->id]
+                ],
+                "expected"=>[
+                    "CREATED"
+                ],
+                "inDb"=>[
+                    "name"=>"other_test"
+                ]
+            ],
+            [
+                "send"=>[
+                    "name"=>'test_name',
+                    "ids"=>[]
+                ],
+                "expected"=>[
+                    "CREATED"
+                ],
+                "inDb"=>[
+                    "name"=>'test_name'
+                ]
+            ],
+            [
+                "send"=>[
+                    "name"=>22,
+                    "ids"=>[]
                 ],
                 "expected"=>[
                     "BAD_REQUEST",

@@ -7,12 +7,14 @@ let envData = {};
 (async()=>{
     //Script to run all cmds needed in dev
     if(!existsSync('node_modules')){
-        console.log('Installing node modules ...');
-        execAndWait('npm install');
+        log('init','Installing node modules ...');
+        await execAndWait('npm install');
+        log('init','Done!');
     }
     if(!existsSync('vendor')){
-        console.log('Installing composer modules ...');
-        execAndWait('composer install');
+        log('init','Installing composer modules ...');
+        await execAndWait('composer install');
+        log('init','Done!');
     }
     
     if(!existsSync('.env')){
@@ -162,7 +164,7 @@ async function envCompleter(intro,env = '.env'){
     }else{
         await make(sqlite);
     }
-    if(!envData['APP_key']){
+    if(!envData['APP_KEY']){
         log('init','App key not generated, generating ...');
         await execAndWait('php artisan key:generate');
     }
@@ -183,14 +185,12 @@ async function envCompleter(intro,env = '.env'){
     }
 }
 function execAndWait(cmd){
-    log('init','running cmd:'+cmd + ' ...');
     return new Promise(end =>{
         exec(cmd,(e)=>{
             if(e){
                 throw e;
             }
-        }).on('exit',()=>{
-            log('init','Done!');
+        }).on('exit',(e)=>{
             end();
         })
     })

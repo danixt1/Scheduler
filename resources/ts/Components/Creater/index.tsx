@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { FormEvent, FormLocation } from "./Forms";
-
+import React, { createContext, useState } from "react";
+import { FormEvent, FormLocation, FormSelector, FormSender } from "./Forms";
 export interface EventData{
     id:number
     type:number
@@ -15,12 +14,29 @@ export function CreaterUsingButton({close}:{close:(a:boolean)=>void}){
 }
 
 function CreaterWindow({close,hidden}:{close:(a:boolean)=>void,hidden:boolean}){
+    let [actualVisible,setVisible] = useState('event');
+    function setTrigger(name:string){
+        return {
+            onClick(){
+                setVisible(name);
+            },
+            hidden:actualVisible == name
+        }
+    }
     return(
         <div className="cr-backwindow" onClick={(e)=>{if(e.target === e.currentTarget){close(true)}}} hidden={hidden}>
             <div className="cr-window">
                 <div className="cr-forms">
-                    <FormLocation close={close} hidden/>
-                    <FormEvent close={close}/>
+                    <FormSelector.Provider value={[actualVisible,setVisible]}>
+                        <FormLocation close={close}/>
+                        <FormSender close={close}/>
+                        <FormEvent close={close}/>
+                    </FormSelector.Provider>
+                    <div className="cr-create-btns">
+                        <button {...setTrigger('sender')}>Criar Sender</button>
+                        <button {...setTrigger('event')}>Criar Evento</button>
+                        <button {...setTrigger('location')}>Criar Local</button>
+                    </div>
                 </div>
             </div>
         </div>

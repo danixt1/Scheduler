@@ -43,6 +43,9 @@ td{
     cursor: pointer;
 }
 .cl-evs{
+    display: flex;
+    justify-content: center;
+    align-items: center;
     box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;

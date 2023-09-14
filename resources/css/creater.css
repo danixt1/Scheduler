@@ -35,15 +35,30 @@
     top: 5%;
 }
 .cr-forms{
-    margin:10px
+    margin:10px;
 }
 .cr-box-input{
     margin:10px 0 8px 0;
 }
-.cr-data-input *{
+.cr-data-input input{
     height: 25px;
 }
 .cr-data-title{
     padding-bottom: 1px;
     font-size: large;
+}
+.cr-list-item{
+    margin: 2px 0px 8px 0px;
+}
+.cr-list{
+    max-height: 120px;
+    overflow: auto;
+}
+.cr-create-btns{
+    margin-top: 25px;
+}
+.cr-create-btns button{
+    margin: 2px;
+    height: 25px;
+    width: 120px;
 }

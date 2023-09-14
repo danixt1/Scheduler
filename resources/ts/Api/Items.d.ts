@@ -1,4 +1,4 @@
-import { Item,ApiRef } from "./Api"
+import { Item,ApiRef, genericEntry } from "./Api"
 export interface ItemSender extends Item{
     name:string
 }
@@ -33,7 +33,7 @@ export interface ItemEvCalendar extends ItemEvData{
     set sender(val:number)
 }
 export interface ApiItems{
-    sender:ItemSender
+    sender:[ItemSender,genericEntry<ItemSender & {ids:number[]}>]
     location:ItemLocation
     events:{
         data:ItemEvData

@@ -25,7 +25,7 @@ export interface Routes{
 export interface FuncApi<T,CREAT>{
     ():Promise<{list:(ApiItem<T>)[]}>
     (data:number):Promise<ApiItem<T>>
-    (data:CREAT):Promise<ApiItem<T>>
+    (data:CREAT & {id?:string | number}):Promise<ApiItem<T>>
     delete(item:string | number):Promise<boolean>
 }
 export type ApiItem<T> = ApiBaseItem & T;

@@ -37,21 +37,40 @@ export function buildApi(routes:Routes){
 export function buildFuncApi(route:string,builds?:any,inputers?:any):FuncApi<any,any>{
     const ACT_LOC = route;
     
-    let func =<FuncApi<any,any>> async function(data?:any):Promise<any>{
+    let func =<FuncApi<any,any>> function(data?:any):Promise<any>{
         if(!data){
-            let all =await get(ACT_LOC);
-            return {
-                list: all.data.map((e:any)=>makeItem(e,ACT_LOC+'/'+e.id))
-            }
+            return getAll();
         }
         if(typeof data === 'number'){
-            let res =await get(ACT_LOC+'/'+data);
-            return makeItem(res.data,ACT_LOC+'/'+data);
+            return getItem(data);
         }else{
+            if(typeof data === 'object'){
+                return data['id'] == undefined ? create() : update();
+            }
+            throw "Invalid passed data";
+        }
+        async function update(){
+            let id:number =Number.parseInt(data.id);
+            delete data.id;
+            await axios.post(ACT_LOC + '/'+id,data);
+            let item = await get(ACT_LOC + '/'+id);
+            return makeItem(item.data,ACT_LOC+'/'+id);
+        }
+        async function create(){
             let res = await axios.post(ACT_LOC,data);
             let id = res.data;
             let item = await get(ACT_LOC + '/'+id);
             return makeItem(item.data,ACT_LOC+'/'+id);
+        }
+        async function getItem(id:number){
+            let res =await get(ACT_LOC+'/'+id);
+            return makeItem(res.data,ACT_LOC+'/'+id);
+        }
+        async function getAll(){
+            let all =await get(ACT_LOC);
+            return {
+                list: all.data.map((e:any)=>makeItem(e,ACT_LOC+'/'+e.id))
+            }
         }
     }
     func.delete =(item:string | number)=>{

@@ -11,8 +11,8 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 axios.defaults.maxRate = 3;
 createInertiaApp({
   resolve: (name: string) => {
-    const pages = import.meta.glob('./Pages/**/*.js', { eager: true })
-    return pages[`./Pages/${name}.js`]
+    const pages = import.meta.glob('./Pages/**/*.tsx', { eager: true })
+    return pages[`./Pages/${name}.tsx`]
   },
   setup({ el, App, props }:{el:Element,App:any,props:any}) {
     document.body.className = 'light'

@@ -85,6 +85,9 @@ function run(){
             log('vite',msg.slice(reload));
         }
     })
+    vite.stderr.on('data',(e)=>{
+        console.log(e.toString());
+    })
     function artisanReady(e){
         let runningMessage = e.toString();
         let start = runningMessage.indexOf('[');
@@ -191,7 +194,7 @@ function execAndWait(cmd){
                 throw e;
             }
         }).on('exit',(e)=>{
-            end();
+            end(e);
         })
     })
 }

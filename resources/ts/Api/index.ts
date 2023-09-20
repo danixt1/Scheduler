@@ -1,7 +1,7 @@
 import { ApiRouting } from "./Api"
 import { buildApi } from "./Conector"
 import { ApiItems } from "./Items"
-
+const BASE_URL = '/api/v1/';
 function dateInput(prop:Date | string){
     if(typeof prop=== 'string'){
         return {value:prop}
@@ -11,11 +11,11 @@ function dateInput(prop:Date | string){
 function dateOutput(prop:string){
     return new Date(prop + ' UTC');
 }
-let mainRoutes = buildApi({
+let mainRoutes =<any>buildApi({url:BASE_URL},{
     senders:'sender',
     locations:'location'
 })
-let eventsRoutes = buildApi({
+let eventsRoutes = buildApi({url:BASE_URL},{
     'events/data':'data',
     'events/calendar':{
         name:'calendar',
@@ -44,7 +44,8 @@ declare global{
     }
 }
 mainRoutes.events = eventsRoutes;
-
-window.api =<ApiRouting<ApiItems>> mainRoutes;
+if(typeof window === 'object'){
+    window.api =<ApiRouting<ApiItems>> mainRoutes;
+}
 
 export const API = <ApiRouting<ApiItems>> mainRoutes;

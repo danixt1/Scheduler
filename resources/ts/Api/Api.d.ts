@@ -22,6 +22,9 @@ export interface RouteItem{
 export interface Routes{
     [route:string]:string | RouteItem
 }
+export interface ApiConfig{
+    url:string
+}
 export interface FuncApi<T,CREAT>{
     ():Promise<{list:(ApiItem<T>)[]}>
     (data:number):Promise<ApiItem<T>>

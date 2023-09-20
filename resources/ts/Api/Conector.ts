@@ -1,13 +1,16 @@
 import axios, { AxiosResponse } from "axios";
-import { Routes, InputerFunc, FuncApi, ApiBaseItem } from "./Api";
-const BASE_URL = '/api/v1/';
+import { Routes, InputerFunc, FuncApi, ApiBaseItem,ApiConfig } from "./Api";
 const allRoutes:{[index:string]:any} = {};
 /** list with all GET operations running.
  * case some get is already running the `get()` method just connect to this promise */
 const runningGets:{[index:string]:Promise<AxiosResponse>} = {};
 
-export function buildApi(routes:Routes){
-    let ret:{[index:string]:any} = {};
+export function buildApi<T = any,CREAT = T>(config:ApiConfig | string, routes:Routes){
+    let ret:{[index:string]:FuncApi<T,CREAT>} = {};
+    let ApiUrl = typeof config === 'string'?config : config.url;
+    if(!ApiUrl.endsWith('/')){
+        ApiUrl +='/';
+    }
     for(const [index,value] of Object.entries(routes)){
         let itemName = '';
         let build:{[index:string]:(val:any)=>any} = {};
@@ -27,14 +30,14 @@ export function buildApi(routes:Routes){
                 }
             }
         }
-        let fullPath = BASE_URL + index;
-        let thisloc = buildFuncApi(fullPath,build,inputer);
+        let fullPath = ApiUrl + index;
+        let thisloc = buildFuncApi<T,CREAT>(fullPath,build,inputer);
         allRoutes[fullPath] = thisloc;
         ret[itemName] = thisloc;
     }
     return ret;
 }
-export function buildFuncApi(route:string,builds?:any,inputers?:any):FuncApi<any,any>{
+export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,inputers?:any):FuncApi<T,CREAT>{
     const ACT_LOC = route;
     
     let func =<FuncApi<any,any>> function(data?:any):Promise<any>{

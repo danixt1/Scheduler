@@ -33,24 +33,20 @@ class TimeEvent{
         if($act){
             $idCalendar = $calendar->getId();
             if($idCalendar != -1)
-                $actPrc->action($act,["event"=>$this->id,"trigger"=>$idCalendar]);
+                $actPrc->action($act,["event"=>$idCalendar,"trigger"=>$this->id]);
         }
         $sender->sendData($eventInfo);
     }
     public static function extractFromDb(){
         $act = new DateTime();
         $act = $act->modify('-1 minute');
-        
-        $results = 0;
-        $success = 0;
-        $failed = 0;
-        $exceptions = [];
-        $totEvents = 0;
+        $stats = new Stats(['rows','triggers','errors','success']);
+
         $eventsQuery = self::runQuery($act);
         if(count($eventsQuery) == 0){
-            return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents];
+            return $stats->result();
         }
-
+        $stats->set('rows',count($eventsQuery));
         $actionProcessor = new ActionProcessor(["event"=>"eventsdatas","trigger"=>"timeevents"]);
         $triggers = [];
         $trigger = [];
@@ -64,12 +60,14 @@ class TimeEvent{
             $trigger[] = $ev;
         }
         $triggers[] = $trigger;
+        $stats->set('triggers',count($triggers));
         foreach($triggers as $ev){
             $data = [];
             try{
                 $data = json_decode($ev[0]->eventData);
             }catch(Throwable $e){
                 Log::error('Invalid DB data "eventData" don\'t is a valid string JSON format with row id {id}',(array)$ev[0]);
+                $stats->add('errors');
                 continue;
             }
             $event = CalendarEventBuilder::create($data,$ev[0]->eventType,$ev[0]->event_id);
@@ -82,6 +80,7 @@ class TimeEvent{
                     $evData = json_decode($evData);
                 }catch(Throwable $e){
                     Log::error('Invalid DB data "locData" don\'t is a valid string JSON format with row id {id}',(array)$ev[0]);
+                    $stats->add('errors');
                     continue;
                 }
                 $evType = $row->locType;
@@ -96,9 +95,10 @@ class TimeEvent{
             $sender = new Sender($ev[0]->name,$locations,$fallbacks);
             $timedEvent = new TimeEvent($ev[0]->id,$ev[0]->date,$sender,$event);
             $timedEvent->fire($actionProcessor);
+            $stats->add('success');
         }
         $actionProcessor->execute();
-        return ["rows"=>$results,"success"=>$success,"failed"=>$failed,"events"=>$totEvents];
+        return $stats->result();
     }
     public static function runQuery(DateTime $date = null){
         $query =DB_QUERY.($date === null ? '' : ' WHERE te.date < ?'). ' ORDER BY id;';

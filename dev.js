@@ -38,7 +38,15 @@ let envData = {};
         callToDB().on('error',(e)=>{
             switch (e.code) {
                 case 'ECONNREFUSED':
-                    log('init','DB not started awaiting for DB...');
+                    if(!envData['INIT_DB']){
+                        log('init','DB not started awaiting for DB...');
+                    }else{
+                        exec(envData['INIT_DB'],(e,a)=>{
+                            if(e){
+                                log('init','Failed initializing DB error: \n'+e+'\n please manual activty DB')
+                            }
+                        });
+                    }
                     checkRes();
                     function checkRes(){
                         callToDB().on('error',(e)=>{
@@ -76,6 +84,9 @@ function run(){
 
     const phpServer =spawn('php',['artisan', 'serve']);
     const vite = spawn('npx',['vite']);
+    let finishing = false;
+    baseEvs('artisan',phpServer);
+    baseEvs('vite',vite);
     phpServer.stdout.once('data',artisanReady);
     vite.stdout.on('data',viteReady);
     vite.stdout.on('data',(e)=>{
@@ -84,9 +95,6 @@ function run(){
         if(reload != -1){
             log('vite',msg.slice(reload));
         }
-    })
-    vite.stderr.on('data',(e)=>{
-        console.log(e.toString());
     })
     function artisanReady(e){
         let runningMessage = e.toString();
@@ -106,14 +114,38 @@ function run(){
         }
         log('vite','running vite server in '+local[1]);
         vite.stdout.removeListener('data',viteReady);
+        logAll('vite',vite);
+    }
+    function logAll(name,spawner){
+        spawner.stdout.on('data',(e)=>{
+            let msg = e.toString().trim();
+            if(msg){
+                log(name,msg);
+            }
+        });
     }
     function killAll(){
+        finishing = true;
         phpServer.kill();
         vite.kill();
     }
+    function baseEvs(name,spawned){
+        let lastMessage = '';
+        spawned.stdout.on('error',failed);
+        spawned.on('error',failed);
+        spawned.stderr.on('data',e =>{
+            lastMessage = e.toString();
+        })
+        spawned.on('exit',(e)=>{
+            if(!finishing){
+                failed(`Unexpected closing from ${name} last message: ${lastMessage}`);
+            }
+        })
+    }
     function failed(error){
         killAll();
-        throw typeof error === 'string' ?new Error(error) : error;
+        console.error(error === 'string' ?new Error(error) : error);
+        process.exit(2);
     }
     ['exit','SIGUSR1','SIGUSR2','uncaughtException'].forEach(e =>{
         process.on(e,killAll);
@@ -129,10 +161,10 @@ function readEnv(envString){
             continue;
         };
         let propName = line.substring(0,eqPos);
-        let value = line.substring(eqPos+1).match(/\s*(.+)/);
+        let value = line.substring(eqPos+1).match(/"(.+)"|(.+)/);
         let finalValue = '';
         if(value){
-            finalValue = value[1];
+            finalValue = value[1] || value[2];
         };
         actEnv[propName] = finalValue;
     }

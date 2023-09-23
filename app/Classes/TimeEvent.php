@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-const DB_QUERY = 'SELECT te.id,s.id as sender_id,l.id as location_id,ed.id as event_id,s.name,te.date,ed.type as eventType,ed.data as eventData,l.data as locData,ls.isFallback,l.type as locType FROM timeevents as te 
+const DB_QUERY = 'SELECT te.id as id,s.id as sender_id,l.id as location_id,ed.id as event_id,s.name,te.date,ed.type as eventType,ed.data as eventData,l.data as locData,ls.isFallback,l.type as locType FROM timeevents as te 
 INNER JOIN senders as s ON s.id = te.sender_id 
 INNER JOIN eventsdatas as ed on ed.id = te.eventsdata_id 
 INNER JOIN locsenders as ls ON s.id = ls.sender_id 
@@ -39,7 +39,6 @@ class TimeEvent{
     }
     public static function extractFromDb(){
         $act = new DateTime();
-        $act = $act->modify('-1 minute');
         $stats = new Stats(['rows','triggers','errors','success']);
 
         $eventsQuery = self::runQuery($act);

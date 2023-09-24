@@ -4,90 +4,53 @@ namespace Tests\Feature;
 
 use App\Classes\ActionMaker;
 use App\Classes\ActionProcessor as act;
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Depends;
-use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Artisan;
+use App\Models\EventsData;
+use App\Models\Location;
+use App\Models\Sender;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ActionProcessorTestDB extends TestCase{
-    public static act $act;
-    public static array $ref = ["event"=>"eventsdatas","trigger"=>"timeevents"];
-
-    public static function delProvider():array{
-        $t = [1,2,4,7,8];
-        $e = [1,2,8];
-        $ret = [];
-        foreach($t as $local){
-            $ret[] = ["trigger",$local];
+    use RefreshDatabase;
+    
+    public function test_action_processor_with_del(){
+        $act = new act(['event'=>'eventsdatas','sender'=>'senders']);
+        $delEvent = ActionMaker::delete('event');
+        $delSender= ActionMaker::delete('sender');
+        for ($i=0; $i <5; $i++) { 
+            $act->action($delEvent,['event'=>EventsData::factory()->create()->id]);
+            $act->action($delSender,['sender'=>Sender::factory()->create()->id]);
         };
-        foreach($e as $local){
-            $ret[] = ["event",$local];
-        };
-        return $ret;
+        $act->execute();
+        $this->assertDatabaseEmpty('eventsdatas');
+        $this->assertDatabaseEmpty('senders');
     }
+    public function test_action_processor_with_update(){
+        $act = new act(['loc'=>'locations','sender'=>'senders']);
+        $updLoc = ActionMaker::update(["name"=>"LOC_TEST"])->in('loc');
+        $updSender= ActionMaker::update(["name"=>"SENDER_TEST"])->in('sender');
 
-    public static function updProvider():array{
-        return [
-            ['trigger',3,['date'=>'2000-01-01 10:00:00']],
-            ['event',3,['data'=>'test']]
-        ];
-    }
+        Sender::factory()->create(['name'=>'NOT_CHANGE_SENDER']);
+        Location::factory()->create(['name'=>'NOT_CHANGE_LOCATION']);
 
-    public function test_build_actionProcessor(){
-        self::$act = new act(self::$ref);
-        $this->assertTrue(true);
-    }
-    #[Depends('test_build_actionProcessor')]
-    public function test_prepare_db(){
-        $this->assertEquals(0,Artisan::call('migrate:fresh'),Artisan::output());
-        $this->assertEquals(0,Artisan::call('db:seed'),Artisan::output());
-    }
-    #[Depends('test_prepare_db')]
-    public function test_add_delete_actions(){
-        $act = self::$act;
-        foreach(self::delProvider() as $del){
-            [$name,$id] = $del;
-            $act->action(ActionMaker::delete()->in($name),[$name => $id]);
-        };
-        $this->assertTrue(true);
-    }
-
-    #[Depends('test_prepare_db')]
-    public function test_add_update_actions(){
-        $act = self::$act;
-        foreach(self::updProvider() as $upd){
-            [$relativeName,$id,$data] = $upd;
-            $act->action(ActionMaker::update($data)->in($relativeName)
-            ,[$relativeName=>$id]);
-        };
-        $this->assertTrue(true);
-    }
-
-    #[Depends('test_add_delete_actions')]
-    #[Depends('test_add_update_actions')]
-    public function test_call_execute_function(){
-        self::$act->execute();
-        $this->assertTrue(true);
-    }
-
-    #[DataProvider('updProvider')]
-    #[Depends('test_call_execute_function')]
-    public function test_row_is_updated(string $relativeName,int $id,array $data){
-        $tableName = Self::$ref[$relativeName];
-        $model = DB::table($tableName)->find($id);
-        $this->assertNotNull($model);
-        foreach($data as $key=>$value){
-            $this->assertEquals($model->{$key},$value);
-        };
-    }
-
-    #[DataProvider('delProvider')]
-    #[Depends('test_call_execute_function')]
-    public function test_row_is_deleted_from_db(string $refName,int $id):void{
-        $tableName = self::$ref[$refName];
-        $res = DB::table($tableName)->find($id);
-        $this->assertEquals(null,$res);
+        $senderModels = Sender::factory(3)->create();
+        $locModels = Location::factory(3)->create();
+        foreach ($senderModels as $senderModel) {
+            $act->action($updSender,['sender'=>$senderModel->id]);
+        }
+        foreach ($locModels as $locModel) {
+            $act->action($updLoc,['loc'=>$locModel->id]);
+        }
+        $act->execute();
+        foreach ($senderModels as $senderModel) {
+            $senderModel->refresh();
+            $this->assertEquals($senderModel->name,'SENDER_TEST');
+        }
+        foreach ($locModels as $locModel) {
+            $locModel->refresh();
+            $this->assertEquals($locModel->name,'LOC_TEST');
+        }
+        $this->assertDatabaseHas('locations',['name'=>'NOT_CHANGE_LOCATION']);
+        $this->assertDatabaseHas('senders',['name'=>'NOT_CHANGE_SENDER']);
     }
 }

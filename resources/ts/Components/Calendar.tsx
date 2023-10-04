@@ -98,8 +98,10 @@ export default function Calendar({month,year,selected = null, showTop=true,child
                 <thead className="cl-days">
                     <tr>
                         {days.map((e,i) =>{
-                            //TODO make system to only show first letter when portrait or low width
-                            return <th key={'cl-d-'+i}>{e}</th>
+                            return <th key={'cl-d-'+i}>
+                                <span className='landscape-info'>{e}</span> 
+                                <span className='portrait-info'>{e[0]}</span>
+                            </th>
                         })}
                     </tr>
                 </thead>

@@ -48,7 +48,7 @@ export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,input
             return getItem(data);
         }else{
             if(typeof data === 'object'){
-                return data['id'] == undefined ? create() : update();
+                return (data['id'] != undefined &&  (typeof data['id'] == 'number' || data['id'].length > 0)) ? update() : create();
             }
             throw "Invalid passed data";
         }

@@ -12,3 +12,13 @@
 .app-pt2{
     flex-basis: 70%;
 }
+@media (orientation: landscape) {
+    .portrait-info{
+        display: none;
+    }
+}
+@media (orientation: portrait) {
+    .landscape-info{
+        display: none;
+    }
+}

@@ -1,8 +1,9 @@
-import { createContext, createRef, useContext, useEffect, useRef, useState } from "react";
-import { Control, UseFormRegister, useFieldArray, useForm } from "react-hook-form";
+import { ReactElement, ReactNode, createContext, createRef, useContext, useEffect, useRef, useState } from "react";
+import { Control, UseFormRegister, UseFormReturn, useFieldArray, useForm } from "react-hook-form";
 import { API } from "../../Api";
 import { CalendarEventContext } from "../../contexts";
 import { SelectWithApiData, InputZone, BaseInput } from "./Inputs";
+import { FuncApi } from "../../Api/Api";
 
 interface Sender{
     name:string,
@@ -22,29 +23,59 @@ interface LocationHttpRequest{
     h:{[index:string]:string}
 }
 type CreatingLocationHttpRequest = Omit<LocationHttpRequest,'h'> & {h:Array<{name:string,value:string}>};
-interface CloseWindow{
-    close(a:boolean):void
-}
+
 interface TimedEvent{
     sender_id:number
     date:string
 }
 interface CreatingEvent extends TimedEvent{
+    id?:string
     eventName:string
     eventDesc:string
 }
-export type FormBuilder = React.HTMLAttributes<HTMLFormElement> & CloseWindow;
-
+export type FormBuilder = React.HTMLAttributes<HTMLFormElement> & {item_id?:number | string};
+export interface BaseFormAttrs extends React.HTMLAttributes<HTMLElement>{
+    data:FormData<any>
+    item_id?:number | string
+    children:ReactNode
+};
 export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(val:string)=>void]);
-
-export function FormEvent({close,...props}:FormBuilder){
-    let {setEvents} = useContext(CalendarEventContext);
+export const CloseWindownContext = createContext((a:boolean)=>{});
+export function BaseForm({item_id,children,data,...props}:BaseFormAttrs){
+    let {register,name,displayName,processing,handleSubmit,api,reset} = data;
     let [noHidden,setNext] = useContext(FormSelector);
-
-    const {register,handleSubmit} = useForm<CreatingEvent>();
-    
-    function onSubmit(t:CreatingEvent){
-        API.events.calendar({
+    let submitRef = createRef<HTMLInputElement>();
+    props.onSubmit = handleSubmit((data)=>{
+        let btn =submitRef.current!;
+        let result = processing(data);
+        btn.disabled = true;
+        api(result).
+        finally(()=>{btn.disabled = false}).
+        then(()=>{reset((e:any)=>{
+            let res:Record<string,any> = {};
+            for(const [varName,value] of Object.entries(e)){
+                res[varName] = Array.isArray(value) ? [] : '';
+            }
+            return res;
+        })});
+    })
+    return (
+        <form {...props} hidden={noHidden != name}>
+            <h1>{item_id ? 'Editar' : 'Novo'} {' ' +displayName}</h1>
+            {item_id && <input type="hidden" {...register('id',{value:item_id})}/>}
+            {children}
+            <input type="submit" value={"Salvar " + displayName} ref={submitRef}/>
+        </form>
+    )
+}
+export function FormEvent({...props}:FormBuilder){
+    let {setEvents} = useContext(CalendarEventContext);
+    let close = useContext(CloseWindownContext);
+    let data = formBuilder<CreatingEvent>('event','Evento',processing,API.events.calendar);
+    const {register} = data;
+    function processing(t:CreatingEvent){
+        return {
+            id:t.id,
             type:1,
             data:{
                 name:t.eventName,
@@ -52,37 +83,28 @@ export function FormEvent({close,...props}:FormBuilder){
             },
             date:new Date(t.date),
             sender_id:t.sender_id
-        }).then((e)=>{
-            close(true);
-            setEvents(evs =>[...evs,e]);
-        })
+        }
     }
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} {...props} hidden={noHidden != 'event'}>
-            <h1>Novo Evento</h1>
+        <BaseForm  {...props} data={data}>
             <SelectWithApiData title="Enviar para" 
                 register={register('sender_id',{required:true,valueAsNumber:true})} reqTo={API.sender}
                 show={(e:Sender)=>{return e.name}}/>
             <InputZone register={register('eventName',{required:true})} title="Nome" type="text"/>
             <InputZone register={register('eventDesc',{required:false})} title="Descrição" type="text"/>
             <InputZone register={register('date',{required:true})} title="Data" type="datetime-local"/>
-            <input type="submit" value="Salvar Evento"/>
-        </form>
+        </BaseForm>
     )
 }
 
-function LocationRequest(data:{register:UseFormRegister<any>,control:Control<any,any>,submit:(data:any)=>any,form:React.RefObject<HTMLFormElement>}){
+function LocationRequest(data:{register:UseFormRegister<any>,control:Control<any,any>,submit:(data:any)=>any}){
     const register = data.register as UseFormRegister<CreatingLocationHttpRequest>;
     const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
         control:data.control,
         name: "h", 
     });
     useEffect(()=>{
-        let formElem = data.form.current!;
-        formElem.addEventListener('reset',()=>{
-            remove();
-        })
         data.submit((data:CreatingLocationHttpRequest)=>{ 
             let heads:{[index:string]:string} = {};
             for(const {name,value} of data.h){
@@ -121,36 +143,29 @@ function LocationRequest(data:{register:UseFormRegister<any>,control:Control<any
         </>
     )
 }
-export function FormLocation({close,...props}:FormBuilder){
-    const {register,handleSubmit,control,reset} = useForm<CreatingLocation>();
-    let [noHidden,setNext] = useContext(FormSelector);
+export function FormLocation({...props}:FormBuilder){
+    let data = formBuilder<CreatingLocation>('location','local',processing,API.location);
+    const {register,control} = data;
     let inSubmit =useRef((data:any)=>{return data});
-    let formRef = createRef<HTMLFormElement>();
-    let submitRef = createRef<HTMLInputElement>();
 
     function putToSubmit(fn:(data:any)=>void){
         inSubmit.current = fn;
     }
-    function onSubmit(data:any){
-        submitRef.current!.disabled = true;
+    function processing(data:any){
         data.type = 1;
         Object.assign(data,inSubmit.current(data));
-        API.location(data).
-            then(e =>{formRef.current!.reset();}).
-            catch(e =>{alert('failed saving'); throw e}).
-            finally(()=>{submitRef.current!.disabled = false;})
+        return data;
     }
     return (
-        <form onSubmit={handleSubmit(onSubmit)} {...props} hidden={noHidden != 'location'} ref={formRef}>
-            <h1>Novo Local</h1>
+        <BaseForm {...props} data={data}>
             <InputZone title="Nome" type="text" register={register('name',{required:true})} />
-            <LocationRequest register={register} control={control} submit={putToSubmit} form={formRef}/>
-            <input type="submit" value="Salvar Local" ref={submitRef}/>
-        </form>
+            <LocationRequest register={register} control={control} submit={putToSubmit}/>
+        </BaseForm>
     )
 }
-export function FormSender({close,...props}:FormBuilder){
-    const {register,handleSubmit,control} = useForm<CreatingSender>();
+export function FormSender({...props}:FormBuilder){
+    let data = formBuilder<CreatingSender>('sender','Sender',process,API.sender);
+    const {register,handleSubmit,control} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let [locs,setLocs] = useState([] as {name:string,id:number}[]);
     let [inLoadState,setLoad] = useState(true);
@@ -158,6 +173,10 @@ export function FormSender({close,...props}:FormBuilder){
         control,
         name: "locations", 
     });
+    function process(data:CreatingSender){
+        let ids = data.locations.filter(e =>e.value != '').map(e => Number.parseInt(e.value));
+        return {name:data.name,ids}
+    }
     useEffect(()=>{
         API.location().then(e =>{
             setLocs(e.list.map(e =>{
@@ -166,16 +185,8 @@ export function FormSender({close,...props}:FormBuilder){
             setLoad(false);
         })
     },[])
-    function onSubmit(data:CreatingSender){
-        inLoadState = true;
-        let ids = data.locations.filter(e =>e.value != '').map(e => Number.parseInt(e.value));
-        API.sender({name:data.name,ids}).then(e =>{
-            inLoadState = false;
-        })
-    }
     return (
-        <form onSubmit={handleSubmit(onSubmit)} {...props} hidden={noHidden != 'sender'}>
-            <h1>Novo sender</h1>
+        <BaseForm data={data}>
             <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
             {fields.map((e,index) =>{
                 return (
@@ -185,7 +196,16 @@ export function FormSender({close,...props}:FormBuilder){
                 )
             })}
             <input type="button" value={'Adicionar local'} disabled={inLoadState} onClick={()=>{if(fields.length < 4){append({value:''})}}} />
-            <input type="submit" value="Criar sender" />
-        </form>
+        </BaseForm>
     )
+}
+export function formBuilder<FORM_INFO extends Record<string, any>>(name:string,displayName:string,processData:(data:any)=>any,api:FuncApi<any,any>):FormData<FORM_INFO>{
+    let form = useForm<FORM_INFO>();
+    return {...form,processing:processData,api,name,displayName};
+}
+interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
+    api:FuncApi<any,any>
+    name:string
+    displayName:string
+    processing:(data:any)=>any
 }

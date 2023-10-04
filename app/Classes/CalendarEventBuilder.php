@@ -2,7 +2,7 @@
 
 namespace App\Classes;
 use App\Events\Reminder;
-//TODO build a getter method to get the data formalized to db
+
 abstract class CalendarEventBuilder implements \App\Classes\Builder{
     use CheckerBuilder;
     protected static $list = [];

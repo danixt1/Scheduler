@@ -20,7 +20,6 @@ use App\Http\Controllers\CalenderEventsController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
-//TODO make two new paths one to add unique(reminder) events adding to eventsdata table and timeevent table other to get a name from the refered timeevent table to frontend usage
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });

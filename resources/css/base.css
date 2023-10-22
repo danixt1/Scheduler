@@ -4,12 +4,12 @@ html,body{
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 .light{
-    --bg-selected-main: rgb(187, 183, 204);
+    --bg-selected-main: rgb(214, 210, 233);
     --bg-selected-title: rgb(230, 226, 248);
     --bg-main: rgb(241, 240, 247);
-    --border: rgb(117, 116, 122);
+    --border: rgb(97, 97, 97);
     --bg-title: rgb(206, 204, 219);
-    --color: rgb(76, 76, 87);
+    --color: rgb(74 66 83);
     --color-disabled: rgb(192, 193, 204);
 }
 .dark{

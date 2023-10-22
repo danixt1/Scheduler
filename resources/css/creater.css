@@ -13,6 +13,18 @@
     bottom: 10px;
     right: 10px;
 }
+.inp-creater:hover{
+    background-color:var(--bg-selected-main) !important;
+}
+.inp-creater{
+    margin:8px 0px 8px 0px;
+    font-size: medium;
+    padding: 10px 50px 10px 50px;
+    background-color: var(--bg-title);
+    color:var(--color);
+    border: none;
+    transition: background-color 0.2s;
+}
 .cr-create-btn div{
     text-align: center;
     width: 100%;
@@ -78,9 +90,10 @@
 }
 .cr-create-btns{
     margin-top: 25px;
+    display: flex;
 }
 .cr-create-btns button{
     margin: 2px;
-    height: 25px;
-    width: 120px;
+    flex-grow: 1;
+    height: 30px;
 }

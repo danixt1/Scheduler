@@ -5,8 +5,14 @@ import { CalendarEventContext } from "../../contexts";
 import { SelectWithApiData, InputZone, BaseInput } from "./Inputs";
 import { FuncApi } from "../../Api/Api";
 
+interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
+    api:FuncApi<any,any>
+    name:string
+    displayName:string
+    processing:(data:any)=>any
+}
 interface Sender{
-    name:string,
+    name:string
     id:number
 }
 interface CreatingSender extends Sender{
@@ -37,11 +43,13 @@ export type FormBuilder = React.HTMLAttributes<HTMLFormElement> & {item_id?:numb
 export interface BaseFormAttrs extends React.HTMLAttributes<HTMLElement>{
     data:FormData<any>
     item_id?:number | string
-    children:ReactNode
+    children:ReactNode,
+    disableSubmit?:boolean
 };
 export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(val:string)=>void]);
 export const CloseWindownContext = createContext((a:boolean)=>{});
-export function BaseForm({item_id,children,data,...props}:BaseFormAttrs){
+
+export function BaseForm({item_id,children,data,disableSubmit,...props}:BaseFormAttrs){
     let {register,name,displayName,processing,handleSubmit,api,reset} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let submitRef = createRef<HTMLInputElement>();
@@ -50,21 +58,24 @@ export function BaseForm({item_id,children,data,...props}:BaseFormAttrs){
         let result = processing(data);
         btn.disabled = true;
         api(result).
-        finally(()=>{btn.disabled = false}).
-        then(()=>{reset((e:any)=>{
-            let res:Record<string,any> = {};
-            for(const [varName,value] of Object.entries(e)){
-                res[varName] = Array.isArray(value) ? [] : '';
-            }
-            return res;
-        })});
+            finally(()=>{btn.disabled = false}).
+            then(()=>{reset((e:any)=>{
+                let res:Record<string,any> = {};
+                for(const [varName,value] of Object.entries(e)){
+                    res[varName] = Array.isArray(value) ? [] : '';
+                }
+                return res;
+                })
+            });
     })
     return (
         <form {...props} hidden={noHidden != name}>
             <h1>{item_id ? 'Editar' : 'Novo'} {' ' +displayName}</h1>
             {item_id && <input type="hidden" {...register('id',{value:item_id})}/>}
             {children}
-            <input type="submit" value={"Salvar " + displayName} ref={submitRef}/>
+            <div>
+                <input type="submit" value={"Salvar " + displayName} ref={submitRef} className="inp-creater" disabled={disableSubmit} />
+            </div>
         </form>
     )
 }
@@ -72,6 +83,7 @@ export function FormEvent({...props}:FormBuilder){
     let {setEvents} = useContext(CalendarEventContext);
     let close = useContext(CloseWindownContext);
     let data = formBuilder<CreatingEvent>('event','Evento',processing,API.events.calendar);
+    let [haveSenders,setHaveSender] = useState(null as null | boolean);
     const {register} = data;
     function processing(t:CreatingEvent){
         return {
@@ -85,12 +97,23 @@ export function FormEvent({...props}:FormBuilder){
             sender_id:t.sender_id
         }
     }
-
+    function reqTo(){
+        let request = API.sender();
+        request.then(e =>{
+            setHaveSender(e.list.length != 0);
+        })
+        return request;
+    }
     return (
-        <BaseForm  {...props} data={data}>
+        <BaseForm  {...props} data={data} disableSubmit = {haveSenders != null ? !haveSenders : false}>
             <SelectWithApiData title="Enviar para" 
-                register={register('sender_id',{required:true,valueAsNumber:true})} reqTo={API.sender}
-                show={(e:Sender)=>{return e.name}}/>
+                register={register('sender_id',{required:true,valueAsNumber:true})} 
+                reqTo={reqTo}
+                show={(e:Sender)=>{return e.name}} hidden={haveSenders != null ? !haveSenders : false} />
+            <div hidden={haveSenders != null ? haveSenders : true}>
+                <b>Você ainda não possui nenhum sender registrado.</b><br/>
+                Crie um novo sender para definir os locais para onde o evento deve ser disparado
+            </div>
             <InputZone register={register('eventName',{required:true})} title="Nome" type="text"/>
             <InputZone register={register('eventDesc',{required:false})} title="Descrição" type="text"/>
             <InputZone register={register('date',{required:true})} title="Data" type="datetime-local"/>
@@ -186,7 +209,7 @@ export function FormSender({...props}:FormBuilder){
         })
     },[])
     return (
-        <BaseForm data={data}>
+        <BaseForm data={data} {...props}>
             <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
             {fields.map((e,index) =>{
                 return (
@@ -202,10 +225,4 @@ export function FormSender({...props}:FormBuilder){
 export function formBuilder<FORM_INFO extends Record<string, any>>(name:string,displayName:string,processData:(data:any)=>any,api:FuncApi<any,any>):FormData<FORM_INFO>{
     let form = useForm<FORM_INFO>();
     return {...form,processing:processData,api,name,displayName};
-}
-interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
-    api:FuncApi<any,any>
-    name:string
-    displayName:string
-    processing:(data:any)=>any
 }

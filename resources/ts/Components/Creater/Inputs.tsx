@@ -10,6 +10,12 @@ export interface BaseInput extends React.HTMLAttributes<HTMLDivElement>{
     title:string
     children:ReactNode
 }
+export interface SelectZoneAttrs extends React.HTMLAttributes<HTMLSpanElement>{
+    title:string
+    register:UseFormRegisterReturn<any>
+    reqTo:()=>Promise<any>
+    show:(data:any)=>string | false
+}
 export function BaseInput({title,children,...props}:BaseInput){
     return (
     <div className="cr-box-input" {...props}>
@@ -31,7 +37,7 @@ export function InputZone({title,setValue,register,...props}:InputZoneAttributes
         </BaseInput>
     )
 }
-export function SelectWithApiData({reqTo,show,title,register}:{register:UseFormRegisterReturn<any>,reqTo:()=>Promise<any>,show:(data:any)=>string | false,title:string}){
+export function SelectWithApiData({reqTo,show,title,register,...attrs}:SelectZoneAttrs){
     type showItem ={id:number,name:string};
     let [inLoad,setLoadState] = useState(true);
     let [dataList,setDataList] = useState([] as showItem[]);
@@ -51,7 +57,7 @@ export function SelectWithApiData({reqTo,show,title,register}:{register:UseFormR
         })
     },[]);
     return (
-        <span>
+        <span {...attrs}>
             <div className="cr-loading" hidden={!inLoad}>Carregando...</div>
             <BaseInput title={title} hidden={inLoad}>
                 <select {...register}>

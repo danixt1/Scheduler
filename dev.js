@@ -1,8 +1,10 @@
-import { exec, spawn } from 'child_process';
+import { exec } from 'child_process';
+import spawn from 'cross-spawn';
 import {existsSync, readFileSync, writeFileSync,createWriteStream} from 'fs';
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import {get} from 'http';
+import { join } from 'path';
 let envData = {};
 (async()=>{
     //Script to run all cmds needed in dev
@@ -28,7 +30,7 @@ let envData = {};
         await execAndWait('php artisan migrate');
     }
     envData = readEnv(readFileSync('.env',{encoding:'utf-8'}));
-    await envCompleter('before continue, please answer some question to pass to .env');
+    await envCompleter('before continue, please answer some question to create the .env');
     //Check if db is running
     await new Promise((res=>{
         if(envData['DB_CONNECTION'] === 'sqlite'){
@@ -81,9 +83,9 @@ let envData = {};
 
 function run(){
     log('init','starting artisan and vite');
-
-    const phpServer =spawn('php',['artisan', 'serve']);
-    const vite = spawn('npx',['vite']);
+    
+    const phpServer =spawn('php',['artisan', 'serve'],{stdio:'pipe'});
+    const vite = spawn('npx',['vite'],{stdio:'pipe'});
     let finishing = false;
     baseEvs('artisan',phpServer);
     baseEvs('vite',vite);
@@ -108,13 +110,17 @@ function run(){
     }
     function viteReady(e){
         let msg = e.toString();
-        let local = msg.match(/Local:[\s\t]+(.+)/);
-        if(!local){
-            return;
+        //Regex not working good in windows
+        let localPos = msg.indexOf('Local');
+        if(localPos != -1){
+            let url = msg.indexOf('http',localPos);
+            let end = msg.indexOf('\n',url);
+            if(url != -1){
+                log('vite','running vite server in '+msg.substring(url,end != -1 ? end : undefined));
+                vite.stdout.removeListener('data',viteReady);
+                setTimeout(()=>logAll('vite',vite),100);
+            }
         }
-        log('vite','running vite server in '+local[1]);
-        vite.stdout.removeListener('data',viteReady);
-        logAll('vite',vite);
     }
     function logAll(name,spawner){
         spawner.stdout.on('data',(e)=>{
@@ -170,10 +176,10 @@ function readEnv(envString){
     }
     return actEnv;
 }
-function log(from,message){
+function log(from,message,fn = 'log'){
     let date = new Date();
-    console.log(
-        `${twoDigits(date.getHours())}:${twoDigits(date.getMinutes())}:${twoDigits(date.getSeconds())} [${from}] ${message}`);
+    let finalMessage = `${twoDigits(date.getHours())}:${twoDigits(date.getMinutes())}:${twoDigits(date.getSeconds())} [${from}] ${message}`;
+    console[fn](finalMessage);
     function twoDigits(val){
         return val < 10 ? '0'+val : ''+val;
     }
@@ -198,6 +204,14 @@ async function envCompleter(intro,env = '.env'){
         await make(noSqlite);
     }else{
         await make(sqlite);
+        if(!existsSync(join('database',envData['DB_DATABASE']))){
+            if(!envData['DB_DATABASE'].endsWith('.sqlite')){
+                log('init','attention db with no .sqlite in end not is ignored by git','warn');
+            }
+            log('init','Running migration in db...');
+            await execAndWait('php artisan migrate:fresh');
+            log('init','migrationd done!');
+        }
     }
     if(!envData['APP_KEY']){
         log('init','App key not generated, generating ...');
@@ -216,7 +230,9 @@ async function envCompleter(intro,env = '.env'){
                 finalText +=nameChecker + '='+resp+'\n';
             };
         };
-        writeFileSync(env,finalText,{encoding:'utf-8',flag:'a+'});
+        if(finalText.length < 2){
+            writeFileSync(env,finalText,{encoding:'utf-8',flag:'a+'});
+        }
     }
 }
 function execAndWait(cmd){

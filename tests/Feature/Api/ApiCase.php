@@ -31,25 +31,30 @@ abstract Class ApiCase extends TestCase{
         $tableName = app($model)->getTable();
 
         $totalItemCreated = 0;
+        $count = 0;
         Log::info("TEST CREATE in $entrypoint");
-        foreach ($info as $create) {
+        foreach ($info as &$create) {
+            $count++;
+            Log::info("ITEM $count");
             $expect = $create['expected'];
             $toSend = $create['send'];
+            Log::info("sended",$toSend);
             $response =  $this->post("api/v1/$entrypoint",$toSend);
-            //stringfy arrays in "toSend"
-            foreach ($toSend as $key => $value) {
-                if(gettype($value) === 'array'){
-                    $toSend[$key] = json_encode($value);
-                }
-            }
             $this->isExpected($response,$expect);
             $expectResp = gettype($expect) == 'array'? $expect[0] : $expect;
             if($expectResp === 'CREATED'){
+                //stringfy arrays in "toSend"
+                foreach ($toSend as $key => $value) {
+                    if(gettype($value) === 'array'){
+                        $toSend[$key] = json_encode($value);
+                    }
+                }
                 $inDb = isset($create['inDb']) ? $create['inDb'] : $toSend;
                 $this->assertDatabaseHas($tableName,$inDb);
-                $totalItemCreated+=1;
+                $totalItemCreated++;
             }
         }
+        Log::info("---------------END---------------");
         if($totalItemCreated == 0){
             throw new Error('On create phase is expected at last one item to be created, 
             to be checked if is correct added to database');
@@ -80,6 +85,7 @@ abstract Class ApiCase extends TestCase{
         foreach($json as $val){
            $this->assertTrue(in_array($val['id'],$getters));
         }
+        Log::info("---------------END---------------");
 
     }
     function test_update(){
@@ -87,13 +93,15 @@ abstract Class ApiCase extends TestCase{
         $data = $this->apiUpdate();
         $model = $this->model();
         $entrypoint = $this->apiName();
+        Log::info("TEST UPDATE in $entrypoint");
         foreach($data as $act){
             $model = $act['model'];
             $send = $act['send'];
             $expected = $act['expected'];
-            Log::info("TEST UPDATE in $entrypoint/".$model->id);
+            Log::info("ITEM $entrypoint/".$model->id);
             $resp = $this->post("/api/v1/$entrypoint/".$model->id,$send);
             $this->isExpected($resp,$expected);
+            Log::info("---------------END---------------");
         };
     }
     function test_delete(){
@@ -103,6 +111,7 @@ abstract Class ApiCase extends TestCase{
         $this->delete("/api/v1/$entrypoint/".$model->id);
         Log::info("TEST DELETE in $entrypoint/".$model->id);
         $this->assertModelMissing($model);
+        Log::info("---------------END---------------");
     }
     private function isExpected(\Illuminate\Testing\TestResponse $resp,array | string $data){
         $message = 'OK';

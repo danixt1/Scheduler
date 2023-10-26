@@ -32,7 +32,7 @@ class Reminder extends CalendarEventBuilder{
 
     public function __construct(array $data,int $id = -1){
         $this->name = $data[0];
-        $this->desc = $data[1];
+        $this->desc = isset($data[1]) ? $data[1] : '';
         $this->id = $id;
     }
     public function getData():array{
@@ -51,6 +51,9 @@ class Reminder extends CalendarEventBuilder{
         return 'reminder';
     }
     public static function toDb(array $data): string{
+        if(!isset($data['description'])){
+            $data['description'] = '';
+        }
         $name = $data['name'];
         $desc = $data['description'];
         return json_encode([$name,$desc]);

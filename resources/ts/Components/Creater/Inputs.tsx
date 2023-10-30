@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import { UseFormRegisterReturn } from "react-hook-form";
+import { ApiItem, FuncApi } from "../../Api/Api";
 
 export interface InputZoneAttributes extends React.InputHTMLAttributes<HTMLInputElement>{
     title:string
@@ -13,8 +14,9 @@ export interface BaseInput extends React.HTMLAttributes<HTMLDivElement>{
 export interface SelectZoneAttrs extends React.HTMLAttributes<HTMLSpanElement>{
     title:string
     register:UseFormRegisterReturn<any>
-    reqTo:()=>Promise<any>
+    reqTo:FuncApi<any,any>
     show:(data:any)=>string | false
+    inRequest?:(prms:ReturnType<FuncApi<any,any>>)=>void
 }
 export function BaseInput({title,children,...props}:BaseInput){
     return (
@@ -37,13 +39,16 @@ export function InputZone({title,setValue,register,...props}:InputZoneAttributes
         </BaseInput>
     )
 }
-export function SelectWithApiData({reqTo,show,title,register,...attrs}:SelectZoneAttrs){
+export function SelectWithApiData({reqTo,show,title,register,inRequest,...attrs}:SelectZoneAttrs){
     type showItem ={id:number,name:string};
     let [inLoad,setLoadState] = useState(true);
     let [dataList,setDataList] = useState([] as showItem[]);
-    
     useEffect(()=>{
         let prms =reqTo();
+        reqTo.on('create',onCreated);
+        if(inRequest){
+            inRequest(prms);
+        }
         prms.then(e =>{
             let items:showItem[] = [];
             for(const item of e.list){
@@ -55,6 +60,18 @@ export function SelectWithApiData({reqTo,show,title,register,...attrs}:SelectZon
             setLoadState(false);
             setDataList(items);
         })
+        return ()=>{
+            reqTo.off('create',onCreated);
+        }
+        function onCreated(item:ApiItem<any> | null){
+            if(item){
+                let obj:{name: string,id: number} = {
+                    id:item.id,
+                    name:item.name
+                };
+                setDataList(e =>[...e,obj]);
+            }
+        }
     },[]);
     return (
         <span {...attrs}>

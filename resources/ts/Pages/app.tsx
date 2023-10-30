@@ -44,6 +44,26 @@ export default function App({errors,events:_evs}:{errors:any,events:PassedEvents
         API.events.calendar().then(e =>{
             setEvents([...e.list]);
         })
+        API.events.calendar.on('create',onCreate)
+        API.events.calendar.on('delete',onDelete)
+        function onCreate(item:ApiItem<ItemEvCalendar> | null){
+            if(item){
+                setEvents(e =>[...e,item]);
+            }
+        }
+        function onDelete(item:ApiItem<ItemEvCalendar> | null){
+            if(item){
+                setEvents(e =>e.filter((act)=>act != item));
+            }else{
+                API.events.calendar().then(e =>{
+                    setEvents([...e.list]);
+                })
+            }
+        }
+        return ()=>{
+            API.events.calendar.off('delete',onDelete);
+            API.events.calendar.off('create',onCreate);
+        }
     },[]);
     let eventer = {events,setEvents}
     return (

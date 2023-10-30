@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from "axios";
 import { Routes, InputerFunc, FuncApi, ApiBaseItem,ApiConfig } from "./Api";
+import EventEmitter from "eventemitter3";
 const allRoutes:{[index:string]:any} = {};
 /** list with all GET operations running.
  * case some get is already running the `get()` method just connect to this promise */
@@ -39,7 +40,7 @@ export function buildApi<T = any,CREAT = T>(config:ApiConfig | string, routes:Ro
 }
 export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,inputers?:any):FuncApi<T,CREAT>{
     const ACT_LOC = route;
-    
+    let emitter = new EventEmitter();
     let func =<FuncApi<any,any>> function(data?:any):Promise<any>{
         if(!data){
             return getAll();
@@ -63,7 +64,9 @@ export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,input
             let res = await axios.post(ACT_LOC,data);
             let id = res.data;
             let item = await get(ACT_LOC + '/'+id);
-            return makeItem(item.data,ACT_LOC+'/'+id);
+            let finalItem = makeItem(item.data,ACT_LOC+'/'+id);
+            emitter.emit('create',finalItem);
+            return finalItem;
         }
         async function getItem(id:number){
             let res =await get(ACT_LOC+'/'+id);
@@ -76,14 +79,28 @@ export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,input
             }
         }
     }
+    func.off = (mode,callback)=>{
+        emitter.off(mode,callback);
+    }
+    func.on = (mode,callback)=>{
+        emitter.on(mode,callback);
+    }
     func.delete =(item:string | number)=>{
         return new Promise((res)=>{
+            emitter.emit('delete',null);
             axios.delete(ACT_LOC+'/'+item).then(()=>res(true)).catch(()=>res(false));
         })
     }
     return func;
     function makeItem(data:any,path:string){
-        return buildApiItem(transform(data),path,inputers,builds);
+        let item = buildApiItem(transform(data),path,inputers,builds);
+        item.on('delete',()=>{
+            emitter.emit('delete',item);
+        })
+        item.on('update',()=>{
+            emitter.emit('update',item);
+        })
+        return item;
     }
     function transform(item:any){
         let finalITem:any = {};
@@ -97,12 +114,21 @@ export function buildApiItem(data:any,path:string,setter:{[index:string]:Inputer
     let toUpdate:any ={};
     let isDeleted = false;
     let updateSetted = false;
+    let emitter = new EventEmitter();
     let fireOnEnd:()=>void = ()=>{};
     let info:ApiBaseItem = {
+        id:-1,
+        on(event,callback){
+            emitter.on(event,callback)
+        },
+        off(mode, callback) {
+            emitter.off(mode,callback)
+        },
         async delete() {
             if(!isDeleted){
                 try{
                     await axios.delete(path);
+                    emitter.emit('delete');
                     isDeleted = true;
                     return true;
                 }catch(e){
@@ -119,6 +145,7 @@ export function buildApiItem(data:any,path:string,setter:{[index:string]:Inputer
             return new Promise((res)=>{
                 if(updateSetted){
                     fireOnEnd = ()=>{
+                        emitter.emit('update');
                         res(true)
                     }
                 }

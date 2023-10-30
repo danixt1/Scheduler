@@ -29,45 +29,6 @@
     text-align: center;
     width: 100%;
 }
-.cr-backwindow{
-    position: fixed;
-    z-index: 5;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.562);
-}
-.cr-window{
-    position: fixed;
-    z-index: 6;
-    background-color: var(--bg-main);
-    transition-property:width,height,left;
-    transition-duration: 0.5s;
-}
-@media (orientation:landscape){
-    .cr-window{
-        border-radius: 20px;
-        height: 90%;
-        top: 5%;
-    }
-    @media (min-width:600px){
-        .cr-window{
-            width: 40%;
-            left: 30%;
-        }
-    }
-    @media (max-width:600px){
-        .cr-window{
-            width: 60%;
-            left: 20%;
-        }
-    }
-}
-@media (orientation:portrait){
-    .cr-window{
-        width: 100%;
-        height: 100%;
-    }
-}
 .cr-forms{
     margin:10px;
 }

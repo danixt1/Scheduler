@@ -2,6 +2,8 @@
 @import 'eventList.css';
 @import 'calendar.css';
 @import 'creater.css';
+@import '../../node_modules/reactjs-popup/dist/index.css';
+@import 'popUp.css';
 .app-twoParts{
     display: flex;
     flex-direction: row;

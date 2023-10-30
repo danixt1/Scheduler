@@ -3,7 +3,8 @@ import { Control, UseFormRegister, UseFormReturn, useFieldArray, useForm } from 
 import { API } from "../../Api";
 import { CalendarEventContext } from "../../contexts";
 import { SelectWithApiData, InputZone, BaseInput } from "./Inputs";
-import { FuncApi } from "../../Api/Api";
+import { ApiItem, FuncApi } from "../../Api/Api";
+import { ItemEvCalendar, ItemLocation, ItemSender } from "../../Api/Items";
 
 interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
     api:FuncApi<any,any>
@@ -39,20 +40,21 @@ interface CreatingEvent extends TimedEvent{
     eventName:string
     eventDesc:string
 }
-export type FormBuilder = React.HTMLAttributes<HTMLFormElement> & {item_id?:number | string};
+export type FormBuilder<IT> = React.HTMLAttributes<HTMLFormElement> & {apiItem?:ApiItem<IT>};
 export interface BaseFormAttrs extends React.HTMLAttributes<HTMLElement>{
     data:FormData<any>
-    item_id?:number | string
+    apiItem?:ApiItem<Record<any,any>>
     children:ReactNode,
     disableSubmit?:boolean
 };
 export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(val:string)=>void]);
 export const CloseWindownContext = createContext((a:boolean)=>{});
 
-export function BaseForm({item_id,children,data,disableSubmit,...props}:BaseFormAttrs){
+export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseFormAttrs){
     let {register,name,displayName,processing,handleSubmit,api,reset} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let submitRef = createRef<HTMLInputElement>();
+    let item_id = apiItem ? apiItem.id : undefined;
     props.onSubmit = handleSubmit((data)=>{
         let btn =submitRef.current!;
         let result = processing(data);
@@ -65,7 +67,7 @@ export function BaseForm({item_id,children,data,disableSubmit,...props}:BaseForm
                     res[varName] = Array.isArray(value) ? [] : '';
                 }
                 return res;
-                })
+                });
             });
     })
     return (
@@ -79,7 +81,7 @@ export function BaseForm({item_id,children,data,disableSubmit,...props}:BaseForm
         </form>
     )
 }
-export function FormEvent({...props}:FormBuilder){
+export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     let {setEvents} = useContext(CalendarEventContext);
     let close = useContext(CloseWindownContext);
     let data = formBuilder<CreatingEvent>('event','Evento',processing,API.events.calendar);
@@ -97,18 +99,26 @@ export function FormEvent({...props}:FormBuilder){
             sender_id:t.sender_id
         }
     }
-    function reqTo(){
-        let request = API.sender();
+    function inPrms(request:Promise<any>){
         request.then(e =>{
             setHaveSender(e.list.length != 0);
         })
-        return request;
     }
+    function updHaveSender(){
+        setHaveSender(true);
+    }
+    useEffect(()=>{
+        API.sender.on('create',updHaveSender);
+        return ()=>{
+            API.sender.off('create',updHaveSender);
+        }
+    })
     return (
         <BaseForm  {...props} data={data} disableSubmit = {haveSenders != null ? !haveSenders : false}>
             <SelectWithApiData title="Enviar para" 
                 register={register('sender_id',{required:true,valueAsNumber:true})} 
-                reqTo={reqTo}
+                reqTo={API.sender}
+                inRequest={inPrms}
                 show={(e:Sender)=>{return e.name}} hidden={haveSenders != null ? !haveSenders : false} />
             <div hidden={haveSenders != null ? haveSenders : true}>
                 <b>Você ainda não possui nenhum sender registrado.</b><br/>
@@ -166,7 +176,7 @@ function LocationRequest(data:{register:UseFormRegister<any>,control:Control<any
         </>
     )
 }
-export function FormLocation({...props}:FormBuilder){
+export function FormLocation({...props}:FormBuilder<ItemLocation>){
     let data = formBuilder<CreatingLocation>('location','local',processing,API.location);
     const {register,control} = data;
     let inSubmit =useRef((data:any)=>{return data});
@@ -186,9 +196,16 @@ export function FormLocation({...props}:FormBuilder){
         </BaseForm>
     )
 }
-export function FormSender({...props}:FormBuilder){
+export function FormSender({...props}:FormBuilder<ItemSender>){
     let data = formBuilder<CreatingSender>('sender','Sender',process,API.sender);
-    const {register,handleSubmit,control} = data;
+    const {register,handleSubmit,control,setValue} = data;
+    if(props.apiItem){
+        //make system to get value with refered foreign key
+        API.location(props.apiItem.id).then(e =>{
+
+        })
+        //setValue('locations',props.apiItem.)
+    }
     let [noHidden,setNext] = useContext(FormSelector);
     let [locs,setLocs] = useState([] as {name:string,id:number}[]);
     let [inLoadState,setLoad] = useState(true);
@@ -207,6 +224,19 @@ export function FormSender({...props}:FormBuilder){
             }))
             setLoad(false);
         })
+        API.location.on('create',onCreated);
+        return ()=>{
+            API.location.off('create',onCreated);
+        }
+        function onCreated(item:ApiItem<ItemLocation> | null){
+            if(item){
+                let obj:{name: string,id: number} = {
+                    id:item.id,
+                    name:item.name
+                };
+                setLocs(e =>[...e,obj]);
+            }
+        }
     },[])
     return (
         <BaseForm data={data} {...props}>

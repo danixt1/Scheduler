@@ -29,6 +29,8 @@ export interface FuncApi<T,CREAT>{
     ():Promise<{list:(ApiItem<T>)[]}>
     (data:number):Promise<ApiItem<T>>
     (data:CREAT & {id?:string | number}):Promise<ApiItem<T>>
+    on(mode:'delete'|'update'|'create',callback:(item:ApiItem<T> | null)=>void);
+    off(mode:'delete'|'update'|'create',callback:(item:ApiItem<T> | null)=>void);
     delete(item:string | number):Promise<boolean>
 }
 export type ApiItem<T> = ApiBaseItem & T;
@@ -46,6 +48,9 @@ export interface Item{
     id:number
 }
 export interface ApiBaseItem{
+    id:number
+    on(mode:'delete'|'update',callback:()=>void);
+    off(mode:'delete'|'update',callback:()=>void);
     waitUpdate():Promise<boolean>
     delete():Promise<boolean>
     readonly deleted:boolean

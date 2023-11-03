@@ -62,7 +62,6 @@ abstract Class ApiCase extends TestCase{
     }
     function test_read(){
         $this->refreshTestDatabase();
-        DB::table(app($this->model())->getTable())->delete();
         $models = $this->apiRead();
 
         $entrypoint = $this->apiName();
@@ -81,8 +80,9 @@ abstract Class ApiCase extends TestCase{
         $resp = $this->get("/api/v1/$entrypoint");
         $resp->assertOk();
         $json = $resp->json();
-        $this->assertEquals(count($getters),count($json));
-        foreach($json as $val){
+        Log::info('returned json',$json);
+        $this->assertEquals(count($getters),count($json['data']));
+        foreach($json['data'] as $val){
            $this->assertTrue(in_array($val['id'],$getters));
         }
         Log::info("---------------END---------------");

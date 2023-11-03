@@ -11,6 +11,7 @@ class Sender extends Model
     use HasFactory;
 
     protected $fillable = ['name'];
+    protected $hidden = ['created_at','updated_at'];
     public function LocSenders():HasMany{
         return $this->hasMany(LocSender::class);
     }

@@ -1,17 +1,23 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Http\Resources\SenderResource;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Resources\Json\JsonResource;
+
 trait GetDataInModel{
     //protected string $model;
-    protected function data_all():array{
-        return $this->model::all($this->props)->toArray();
+    protected function data_all():Builder{
+        return $this->model::query();
     }
     protected function data_destroy(string $item):int{
         return $this->model::destroy($item);
     }
-    protected function data_item(string $item):null | array{
-        $val =$this->model::find((int)$item,$this->props);
-        return $val ? $val->toArray() : null;
+    protected function data_item(string $item):null | JsonResource | array{
+        $val =$this->model::find((int)$item);
+        if($val){
+            return $this->resource ? new $this->resource($val) : $val->toArray();
+        }
     }
     protected function data_create(array $data):int{
         $info =$this->model::create($data);

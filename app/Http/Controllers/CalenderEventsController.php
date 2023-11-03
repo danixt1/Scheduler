@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
-
+//TODO make special case 
 class CalenderEventsController extends ApiController{
     protected $filterOnSend = ['sender_id','eventsdata_id'];
     function __construct(){
@@ -39,6 +39,7 @@ class CalenderEventsController extends ApiController{
         return $checker;
     }
     protected function data_all():array{
+        TimeEvents::query()->
         $data =  DB::table('timeevents')->
             join('eventsdatas','timeevents.eventsdata_id','=','eventsdatas.id')->
             get($this->props)->toArray();

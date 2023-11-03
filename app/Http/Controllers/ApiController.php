@@ -1,15 +1,18 @@
 <?php
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Database\Eloquent\Model;
 
 interface Icrud{
-    function all(Request $request):Response;
+    function all(Request $request);
     function create(Request $request):Response | ResponseFactory;
     function get(string $item): Response | ResponseFactory;
     function delete(string $item):Response|ResponseFactory;
@@ -20,35 +23,22 @@ abstract class ApiController extends Controller implements Icrud{
     private $onGet = [];
     private $skipBuild = False;
     protected $filterOnSend = [];
-
-    public function __construct(private $createProps,protected $props = ['*']){
+    public function __construct(private $createProps,protected $resource){
         $this->onGet = $this->setItem();
         if(count($this->onGet) == 0){
             $this->skipBuild = True;
         }
     }
-    abstract protected function data_all():array;
+    abstract protected function data_all():Builder;
     abstract protected function data_destroy(string $item):int;
-    abstract protected function data_item(string $item):null | array;
+    abstract protected function data_item(string $item):null | JsonResource | array;
     abstract protected function data_create(array $data):int;
     /** Return the quantity of updated items */
     abstract protected function data_update(string $id,array $dataToSet):int;
 
-    function all(Request $request):Response{
-        $all =Cache::get($this::class,function(){
-            $data =$this->data_all();
-            if(!$this->skipBuild){
-                foreach ($data as $key => $value) {
-                    $data[$key] = $this->buildItem($value);
-                }
-            }
-            foreach ($data as $key => $value) {
-                $data[$key] = $this->outputItem($value);
-            }
-            Cache::put($this::class,$data,1);
-            return $data;
-        });
-        return response()->json($all);
+    function all(Request $request){
+        $data =$this->data_all();
+        return $this->resource::collection($data->paginate(10));
     }
     function delete(string $item):Response{
         $res = $this->data_destroy($item);
@@ -63,14 +53,10 @@ abstract class ApiController extends Controller implements Icrud{
         if($result == null){
             return $this->response_not_found();
         }
-        if(!$this->skipBuild){
-            $result = $this->buildItem($result);
-        }
-        $result =  $this->outputItem($result);
         Cache::put($this::class.$item,$result,1);
         return response()->json($result);
     }
-    private function outputItem(array &$item){
+    private function outputItem(array|Model &$item){
         $name =isset($item['id']) ? $this::class.$item['id'] : null;
         foreach ($this->filterOnSend as $value) {
             unset($item[$value]);

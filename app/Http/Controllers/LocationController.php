@@ -3,16 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Classes\LocationBuilder;
+use App\Http\Resources\LocationResource;
 use App\Models\Location;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class LocationController extends ApiController{
     use GetDataInModel;
     protected string $model = Location::class;
     public function __construct(){
-        parent::__construct(['name','data','type'],['id','name','data','type']);
+        parent::__construct(['name','data','type'],LocationResource::class);
     }
     protected function makeChecker(array &$data):Checker{
         $checker = new Checker($data);
@@ -38,12 +36,5 @@ class LocationController extends ApiController{
             addBuilder('data',fn($val)=>LocationBuilder::passToDb($val,$data['type']));
         
         return $checker;
-    }
-    protected function setItem(){
-        return [
-            "data"=>function($data){
-                return json_decode($data);
-            }
-        ];
     }
 }

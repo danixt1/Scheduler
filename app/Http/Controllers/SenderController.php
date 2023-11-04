@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\SenderResource;
 use App\Models\Sender;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-
+//TODO definir padrão para retornar um model no data_all e passar o senderResource na coleção
 class SenderController extends ApiController{
     use GetDataInModel;
     protected string $model = Sender::class;
     public function __construct(){
-        parent::__construct(['name','ids'],['id','name']);
+        parent::__construct(['name','ids'],SenderResource::class);
     }
     protected function data_update(string $id,array $dataToSet):int{
         if(isset($dataToSet['ids'])){

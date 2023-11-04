@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Classes\CalendarEventBuilder;
+use App\Http\Resources\EventsDataResource;
 use App\Models\EventsData;
 
 class EventsDataController extends ApiController{
@@ -11,7 +12,7 @@ class EventsDataController extends ApiController{
     public function __construct(){
         parent::__construct(
             ['type','data'],
-            ['id','type','data']
+            EventsDataResource::class
         );
     }
     protected function makeChecker(array &$data): Checker{
@@ -30,12 +31,5 @@ class EventsDataController extends ApiController{
                 return CalendarEventBuilder::passToDb($val,$data['type']);
             });
         return $checker;
-    }
-    protected function setItem(){
-        return [
-            "data"=>function($data,$item){
-                return CalendarEventBuilder::create(json_decode($data),$item['type'])->getData();
-            }
-        ];
     }
 }

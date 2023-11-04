@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { Routes, InputerFunc, FuncApi, ApiBaseItem,ApiConfig } from "./Api";
+import { Routes, InputerFunc, FuncApi, ApiBaseItem,ApiConfig, ListOfItems } from "./Api";
 import EventEmitter from "eventemitter3";
 const allRoutes:{[index:string]:any} = {};
 /** list with all GET operations running.
@@ -72,10 +72,23 @@ export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,input
             let res =await get(ACT_LOC+'/'+id);
             return makeItem(res.data,ACT_LOC+'/'+id);
         }
-        async function getAll(){
-            let all =await get(ACT_LOC);
+        async function getAll(getIn:string = ACT_LOC):Promise<ListOfItems<any>>{
+            let all =await get(getIn);
+            let data = all.data;
+            let final = getIn.includes('?') ? getIn.indexOf('?') : getIn.length;
+            console.log(getIn.substring(0,final));
+            
             return {
-                list: all.data.map((e:any)=>makeItem(e,ACT_LOC+'/'+e.id))
+                page: data.meta.current_page,
+                list: data.data.map((e:any)=>makeItem(e,getIn.substring(0,final)+'/'+e.id)),
+                async next() {
+                    let next:string | null = data.links.next;
+                    if(!next){
+                        return null;
+                    }else{
+                        return await getAll(next);
+                    }
+                },
             }
         }
     }

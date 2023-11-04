@@ -25,8 +25,13 @@ export interface Routes{
 export interface ApiConfig{
     url:string
 }
+export interface ListOfItems<T>{
+    list:ApiItem<T>[]
+    page:number
+    next():Promise<ListOfItems<T> | null>
+}
 export interface FuncApi<T,CREAT>{
-    ():Promise<{list:(ApiItem<T>)[]}>
+    ():Promise<ListOfItems>
     (data:number):Promise<ApiItem<T>>
     (data:CREAT & {id?:string | number}):Promise<ApiItem<T>>
     on(mode:'delete'|'update'|'create',callback:(item:ApiItem<T> | null)=>void);

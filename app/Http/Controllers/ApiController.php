@@ -37,7 +37,13 @@ abstract class ApiController extends Controller implements Icrud{
     abstract protected function data_update(string $id,array $dataToSet):int;
 
     function all(Request $request){
+        $querys = $request->query();
         $data =$this->data_all();
+        foreach ($querys as $key => $value) {
+            if(str_ends_with($key,'_id')){
+                $data =$data->where($key,intval($value));
+            }
+        }
         return $this->resource::collection($data->paginate(10));
     }
     function delete(string $item):Response{

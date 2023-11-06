@@ -55,6 +55,25 @@ class TimeEventTest extends ApiCase{
     function apiDelete(): Model{
         return $this->make();
     }
+    function test_passed_sender_id_query(){
+        $with = Sender::factory()->create();
+        $notGet = Sender::factory()->create();
+        $expected = [];
+        for ($count=0; $count < 10; $count++) { 
+            if($count % 2 == 0){
+                $expected[] = TimeEvents::factory()->for(EventsData::factory()->create())->for($with)->create()->id;
+            }else{
+                TimeEvents::factory()->for(EventsData::factory()->create())->for($notGet)->create();
+            }
+        }
+        $resp = $this->get('api/v1/'.$this->apiName().'?sender_id='.$with->id);
+        $resp->assertOk();
+        $json = $resp->json();
+        foreach ($json['data'] as  $value) {
+            $this->assertTrue(in_array($value['id'],$expected),'returned id not is in expected values');
+        }
+        $this->assertTrue(count($json['data']) == count($expected));
+    }
     private function make(){
         return TimeEvents::factory()->for(EventsData::factory()->create())->for(Sender::factory()->create())->create();
     }

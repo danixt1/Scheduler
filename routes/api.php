@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CalendarEventsController;
 use App\Http\Controllers\EventsDataController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\LocSenderController;
@@ -8,7 +9,6 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\SenderController;
 use App\Http\Controllers\TimeEventController;
-use App\Http\Controllers\CalenderEventsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,7 +37,7 @@ $makeRoutes = function(array $cruds,string $version){
     };
 };
 $crudsV1 = [
-    ['events/calendar',CalenderEventsController::class],
+    ['events/calendar',CalendarEventsController::class],
     ['events/data',EventsDataController::class],
     ['events/timers',TimeEventController::class],
     ['senders',SenderController::class],

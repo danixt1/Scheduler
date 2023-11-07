@@ -43,11 +43,18 @@ class CalendarEventsTest extends ApiCase{
     }
     function apiUpdate(): array{
         $data =EventsData::factory()->create();
+        $data2 = EventsData::factory()->create();
         TimeEvents::factory()->for($data)->for(Sender::factory()->create())->create();
+        TimeEvents::factory()->for($data2)->for(Sender::factory()->create())->create();
         return [
             [
                 "model"=>$data,
                 "send"=>["date"=>"2021-12-05 12:21:42"],
+                "expected"=>"NO_CONTENT"
+            ],
+            [
+                "model"=>$data2,
+                "send"=>["data"=>["name"=>"update","description"=>"after update"],"type"=>1],
                 "expected"=>"NO_CONTENT"
             ]
         ];

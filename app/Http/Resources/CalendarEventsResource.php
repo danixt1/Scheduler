@@ -19,6 +19,7 @@ class CalendarEventsResource extends JsonResource
         return [
             "id"=>$this->id,
             "date"=>$this->date,
+            "type"=>$this->type,
             'timer'=>URL::to('api/v1/events/timers/'.$this->id),
             'event'=>URL::to('api/v1/events/data/'.$this->eventsdata_id),
             'sender'=>URL::to('api/v1/senders/'.$this->sender_id),

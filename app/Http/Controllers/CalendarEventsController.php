@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 //TODO make special case 
-class CalenderEventsController extends ApiController{
+class CalendarEventsController extends ApiController{
     protected $filterOnSend = ['sender_id','eventsdata_id'];
     protected $props = ['timeevents.id','date','eventsdata_id','sender_id','type','data'];
     function __construct(){
@@ -78,7 +78,29 @@ class CalenderEventsController extends ApiController{
         }
     }
     protected function data_update(string $id, array $dataToSet): int{
-        //TODO
-        return 0;
+        $val = DB::table('timeevents')->
+        join('eventsdatas','timeevents.eventsdata_id','=','eventsdatas.id')->
+        where('timeevents.id',$id)->get($this->props)->first();
+        if(!$val){
+            return 0;
+        }
+        $evId = $val->eventsdata_id;
+        $ev = [
+            'type'=>isset($dataToSet['type']) ? $dataToSet['type'] : $val->type
+        ];
+        $te = [
+            'date'=>isset($dataToSet['date']) ? $dataToSet['date'] : $val->date,
+            'sender_id'=>isset($dataToSet['sender_id'])? $dataToSet['sender_id'] : $val->sender_id
+        ];
+        if(isset($dataToSet['data'])){
+            $ev['data'] = CalendarEventBuilder::passToDb($dataToSet['data'],$ev['type']);
+        }
+        if(isset($ev['data'])){
+            EventsData::where('id',$evId)->update($ev);
+        }
+        if(isset($dataToSet['date']) || isset($dataToSet['sender_id'])){
+            TimeEvents::where('id',$id)->update($te);
+        };
+        return 1;
     }
 }

@@ -34,6 +34,7 @@ export interface FuncApi<T,CREAT>{
     ():Promise<ListOfItems<T>>
     (data:number):Promise<ApiItem<T>>
     (data:CREAT & {id?:string | number}):Promise<ApiItem<T>>
+    withForeign(name:string,id:number | string):Promise<ListOfItems<T>>
     on(mode:'delete'|'update'|'create',callback:(item:ApiItem<T> | null)=>void);
     off(mode:'delete'|'update'|'create',callback:(item:ApiItem<T> | null)=>void);
     delete(item:string | number):Promise<boolean>

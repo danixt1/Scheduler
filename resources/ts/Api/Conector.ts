@@ -58,7 +58,9 @@ export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,input
             delete data.id;
             await axios.post(ACT_LOC + '/'+id,data);
             let item = await get(ACT_LOC + '/'+id);
-            return makeItem(item.data,ACT_LOC+'/'+id);
+            let apiItem = makeItem(item.data,ACT_LOC+'/'+id);
+            emitter.emit('update',apiItem);
+            return apiItem;
         }
         async function create(){
             let res = await axios.post(ACT_LOC,data);
@@ -72,24 +74,23 @@ export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,input
             let res =await get(ACT_LOC+'/'+id);
             return makeItem(res.data,ACT_LOC+'/'+id);
         }
-        async function getAll(getIn:string = ACT_LOC):Promise<ListOfItems<any>>{
-            let all =await get(getIn);
-            let data = all.data;
-            let final = getIn.includes('?') ? getIn.indexOf('?') : getIn.length;
-            console.log(getIn.substring(0,final));
-            
-            return {
-                page: data.meta.current_page,
-                list: data.data.map((e:any)=>makeItem(e,getIn.substring(0,final)+'/'+e.id)),
-                async next() {
-                    let next:string | null = data.links.next;
-                    if(!next){
-                        return null;
-                    }else{
-                        return await getAll(next);
-                    }
-                },
-            }
+    }
+    async function getAll(getIn:string = ACT_LOC):Promise<ListOfItems<any>>{
+        let all =await get(getIn);
+        let data = all.data;
+        let final = getIn.includes('?') ? getIn.indexOf('?') : getIn.length;
+        
+        return {
+            page: data.meta.current_page,
+            list: data.data.map((e:any)=>makeItem(e,getIn.substring(0,final)+'/'+e.id)),
+            async next() {
+                let next:string | null = data.links.next;
+                if(!next){
+                    return null;
+                }else{
+                    return await getAll(next);
+                }
+            },
         }
     }
     func.off = (mode,callback)=>{
@@ -103,6 +104,9 @@ export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,input
             emitter.emit('delete',null);
             axios.delete(ACT_LOC+'/'+item).then(()=>res(true)).catch(()=>res(false));
         })
+    }
+    func.withForeign = (name,id)=>{
+        return getAll(`${ACT_LOC}?${name}_id=${id}`)
     }
     return func;
     function makeItem(data:any,path:string){

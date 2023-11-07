@@ -150,11 +150,8 @@ class LocationHttpRequestModeTest extends TestCase{
         $this->assertEquals($expected,$res,"invalid assert returned:".json_encode($result));
     }
     public function test_return_false_case_address_not_reachable(){
-        Http::fake(function(Request $req){
-            //Don't return any response
-        });
         $req = new HttpRequestMode([
-            'u'=>'https://test.com',
+            'u'=>'https://10.0.0.0',
             'd'=>'query'
         ]);
         $this->assertFalse($req->send([]));

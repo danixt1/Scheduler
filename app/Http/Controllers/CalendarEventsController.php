@@ -93,9 +93,9 @@ class CalendarEventsController extends ApiController{
             'sender_id'=>isset($dataToSet['sender_id'])? $dataToSet['sender_id'] : $val->sender_id
         ];
         if(isset($dataToSet['data'])){
-            $ev['data'] = CalendarEventBuilder::passToDb($dataToSet['data'],$ev['type']);
+            $ev['data'] = $dataToSet['data'];
         }
-        if(isset($ev['data'])){
+        if(isset($dataToSet['data'])){
             EventsData::where('id',$evId)->update($ev);
         }
         if(isset($dataToSet['date']) || isset($dataToSet['sender_id'])){

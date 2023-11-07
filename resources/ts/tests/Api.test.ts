@@ -39,7 +39,7 @@ describe('Api',()=>{
         let urlPassed = '';
         actualTest =(req,res)=>{
             urlPassed = req.url || '';
-            jsonRes(res,[{url:req.url}]);
+            jsonRes(res,renderListResponse([{url:req.url}]));
         };
         let api =buildApi(API_URL,{
             'easy':'test1',
@@ -112,4 +112,7 @@ describe('Api',()=>{
 })
 function jsonRes(res:any,data:any){
     res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(data));
+}
+function renderListResponse(list:any[]){
+ return {data:list,meta:{current_page:1,from:1,last_page:1,per_page:10,to:10,total:list.length}}
 }

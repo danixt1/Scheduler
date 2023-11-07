@@ -46,6 +46,7 @@ export default function App({errors,events:_evs}:{errors:any,events:PassedEvents
         })
         API.events.calendar.on('create',onCreate)
         API.events.calendar.on('delete',onDelete)
+        API.events.calendar.on('update',onUpdate);
         function onCreate(item:ApiItem<ItemEvCalendar> | null){
             if(item){
                 setEvents(e =>[...e,item]);
@@ -60,7 +61,13 @@ export default function App({errors,events:_evs}:{errors:any,events:PassedEvents
                 })
             }
         }
+        function onUpdate(){
+            API.events.calendar().then(e =>{
+                setEvents([...e.list]);
+            })
+        }
         return ()=>{
+            API.events.calendar.off('update',onUpdate);
             API.events.calendar.off('delete',onDelete);
             API.events.calendar.off('create',onCreate);
         }

@@ -58,7 +58,9 @@ export function buildFuncApi<T = any,CREAT = any>(route:string,builds?:any,input
             delete data.id;
             await axios.post(ACT_LOC + '/'+id,data);
             let item = await get(ACT_LOC + '/'+id);
-            return makeItem(item.data,ACT_LOC+'/'+id);
+            let apiItem = makeItem(item.data,ACT_LOC+'/'+id);
+            emitter.emit('update',apiItem);
+            return apiItem;
         }
         async function create(){
             let res = await axios.post(ACT_LOC,data);

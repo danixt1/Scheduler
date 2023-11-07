@@ -36,7 +36,7 @@ function EventItem({ev,monthMode}:{ev:EventData,monthMode:boolean}){
 export function EventsList({month}:{month?:number}){
 
     const {events} =useContext(CalendarEventContext);
-    const useEvs =month ?events.filter(d =>d.date.getMonth() + 1 == month) : events;
+    const useEvs =(month ?events.filter(d =>d.date.getMonth() + 1 == month) : events).sort((a,b)=>a.date.getDate() - b.date.getDate());
     const monthMode = typeof month === 'number';
     return (
         <div className="itemList">

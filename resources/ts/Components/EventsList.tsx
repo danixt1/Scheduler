@@ -1,6 +1,8 @@
-import {useContext, useEffect} from "react"
+import {useContext, useEffect, useState} from "react"
 import { CalendarEventContext } from "../contexts";
 import { ApiItem } from "../Api/Api";
+import { FormPopUp } from "./PopUp";
+import { FormEvent } from "./Creater/Forms";
 //import "../../css/eventList.css"
 interface EventData{
     title:string
@@ -12,9 +14,7 @@ function EventItem({ev,monthMode}:{ev:EventData,monthMode:boolean}){
     const {title,date,desc} = ev;
     const d = date.getDate(),y = date.getFullYear(),m = date.getMonth();
     let description = desc || ''
-    function editItem(){
-        
-    }
+    let [clickedInEdit,setClickedInEdit] = useState(false);
     return(
     <div className="eventItem">
         <div className="ev-title">{title}</div>
@@ -27,7 +27,8 @@ function EventItem({ev,monthMode}:{ev:EventData,monthMode:boolean}){
         </div>
         <div className="ev-edit">
             <div onClick={()=>{ev.item.delete()}}>Deletar</div>
-            <div>Editar</div>
+            <div onClick={()=>{setClickedInEdit(true)}}>Editar</div>
+            {clickedInEdit ? <FormPopUp onBackClickClose={()=>{setClickedInEdit(false)}} ><FormEvent apiItem={ev.item as any}/></FormPopUp> : ''}
         </div>
     </div>
     )

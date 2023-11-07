@@ -84,9 +84,24 @@ export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseForm
 export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     let {setEvents} = useContext(CalendarEventContext);
     let close = useContext(CloseWindownContext);
-    let data = formBuilder<CreatingEvent>('event','Evento',processing,API.events.calendar);
+    let defValues:any = undefined;
+    if(props.apiItem){
+        let item = props.apiItem;
+        let date = item.date;
+        let dateStr = (new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()).slice(0, -1);
+        console.log(dateStr);
+        
+        defValues = {
+            date:dateStr,
+            eventName:item.data.name,
+            eventDesc:item.data.description,
+            sender_id:item.sender.id
+        }
+    }
+    let data = formBuilder<CreatingEvent>('event','Evento',processing,API.events.calendar,defValues);
     let [haveSenders,setHaveSender] = useState(null as null | boolean);
     const {register} = data;
+
     function processing(t:CreatingEvent){
         return {
             id:t.id,
@@ -101,7 +116,10 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     }
     function inPrms(request:Promise<any>){
         request.then(e =>{
-            setHaveSender(e.list.length != 0);
+            //Calling the message in edit mode cause render bugs
+            if(!props.apiItem){
+                setHaveSender(e.list.length != 0);
+            }
         })
     }
     function updHaveSender(){
@@ -119,6 +137,7 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
                 register={register('sender_id',{required:true,valueAsNumber:true})} 
                 reqTo={API.sender}
                 inRequest={inPrms}
+                selected={props.apiItem ? props.apiItem.sender.id : undefined}
                 show={(e:Sender)=>{return e.name}} hidden={haveSenders != null ? !haveSenders : false} />
             <div hidden={haveSenders != null ? haveSenders : true}>
                 <b>Você ainda não possui nenhum sender registrado.</b><br/>
@@ -201,8 +220,8 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
     const {register,handleSubmit,control,setValue} = data;
     if(props.apiItem){
         //make system to get value with refered foreign key
-        API.location(props.apiItem.id).then(e =>{
-
+        API.location.withForeign('sender',props.apiItem.id).then(e =>{
+            setValue('locations',e.list.map(a =>{return {value:a.id + ''}}))
         })
         //setValue('locations',props.apiItem.)
     }
@@ -252,7 +271,7 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         </BaseForm>
     )
 }
-export function formBuilder<FORM_INFO extends Record<string, any>>(name:string,displayName:string,processData:(data:any)=>any,api:FuncApi<any,any>):FormData<FORM_INFO>{
-    let form = useForm<FORM_INFO>();
+export function formBuilder<FORM_INFO extends Record<string, any>>(name:string,displayName:string,processData:(data:any)=>any,api:FuncApi<any,any>,def:any = undefined):FormData<FORM_INFO>{
+    let form = useForm<FORM_INFO>({defaultValues:def});
     return {...form,processing:processData,api,name,displayName};
 }

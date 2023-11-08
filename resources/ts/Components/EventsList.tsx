@@ -3,6 +3,7 @@ import { CalendarEventContext } from "../contexts";
 import { ApiItem } from "../Api/Api";
 import { FormPopUp } from "./PopUp";
 import { FormEvent } from "./Creater/Forms";
+import { SvgEdit, SvgTrash } from "../Svgs";
 //import "../../css/eventList.css"
 interface EventData{
     title:string
@@ -26,8 +27,8 @@ function EventItem({ev,monthMode}:{ev:EventData,monthMode:boolean}){
             {description}
         </div>
         <div className="ev-edit">
-            <div onClick={()=>{ev.item.delete()}}>Deletar</div>
-            <div onClick={()=>{setClickedInEdit(true)}}>Editar</div>
+            <div onClick={()=>{ev.item.delete()}}><SvgTrash/></div>
+            <div onClick={()=>{setClickedInEdit(true)}}><SvgEdit/></div>
             {clickedInEdit ? <FormPopUp onBackClickClose={()=>{setClickedInEdit(false)}} ><FormEvent apiItem={ev.item as any}/></FormPopUp> : ''}
         </div>
     </div>

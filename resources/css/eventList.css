@@ -38,3 +38,20 @@
 .ev-desc{
     padding-top: 4px;
 }
+.ev-edit{
+    margin-top:5px;
+    display: flex;
+}
+.ev-edit > div{
+    display: flex;
+    width: 50px;
+    justify-content: center;
+}
+.ev-edit img{
+    width: 20px;
+}
+.bi{
+    width: 20px;
+    height: 20px;
+    color:var(--color)
+}

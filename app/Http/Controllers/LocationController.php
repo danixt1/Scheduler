@@ -12,6 +12,9 @@ class LocationController extends ApiController{
     public function __construct(){
         parent::__construct(['name','data','type'],LocationResource::class);
     }
+    static public function name(): string{
+        return "Location";
+    }
     protected function makeChecker(array &$data):Checker{
         $checker = new Checker($data);
 

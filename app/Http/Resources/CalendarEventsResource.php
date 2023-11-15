@@ -20,9 +20,9 @@ class CalendarEventsResource extends JsonResource
             "id"=>$this->id,
             "date"=>$this->date,
             "type"=>$this->type,
-            'timer'=>URL::to('api/v1/events/timers/'.$this->id),
-            'event'=>URL::to('api/v1/events/data/'.$this->eventsdata_id),
-            'sender'=>URL::to('api/v1/senders/'.$this->sender_id),
+            'timer'=>route("TimeEvent.show",["item"=>$this->id]),
+            'event'=>route("EventsData.show",["item"=>$this->eventsdata_id]),
+            'sender'=>route("Sender.show",["item"=>$this->sender_id]),
             'data'=>CalendarEventBuilder::create(json_decode($this->data),$this->type)->getData()
         ];
     }

@@ -18,6 +18,9 @@ class TimeEventController extends ApiController{
             TimeEventResource::class
         );
     }
+    static public function name(): string{
+        return "TimeEvent";
+    }
     protected function makeChecker(array &$data): Checker{
         $checker = new Checker($data);
         $checker->

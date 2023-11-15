@@ -15,12 +15,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
-//TODO make special case 
+
 class CalendarEventsController extends ApiController{
     protected $filterOnSend = ['sender_id','eventsdata_id'];
     protected $props = ['timeevents.id','date','eventsdata_id','sender_id','type','data'];
     function __construct(){
         parent::__construct(['data','sender_id','date','type'],CalendarEventsResource::class);
+    }
+    static public function name(): string{
+        return "CalendarEvent";
     }
     protected function makeChecker(array &$data):Checker{
         $checker = new Checker($data);

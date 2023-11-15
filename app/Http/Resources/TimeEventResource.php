@@ -17,8 +17,8 @@ class TimeEventResource extends JsonResource
     {
         return [
             'id'=>$this->id,
-            'data'=>URL::to("/api/v1/events/data/".$this->eventsdata_id),
-            'sender'=>URL::to("/api/v1/senders/".$this->sender_id),
+            'data'=>route("EventsData.show",["item"=>$this->eventsdata_id]),
+            'sender'=>route("Sender.show",["item"=>$this->sender_id]),
             'date'=>$this->date
         ];
     }

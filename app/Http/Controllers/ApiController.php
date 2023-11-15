@@ -29,6 +29,7 @@ abstract class ApiController extends Controller implements Icrud{
             $this->skipBuild = True;
         }
     }
+    abstract static public function name():string;
     abstract protected function data_all():Builder|\Illuminate\Database\Query\Builder;
     abstract protected function data_destroy(string $item):int;
     abstract protected function data_item(string $item):null | JsonResource | array;

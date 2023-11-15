@@ -27,12 +27,12 @@ $makeRoutes = function(array $cruds,string $version){
     foreach($cruds as $crud){
         $class = $crud[1];
         Route::prefix($version.'/'.$crud[0])->middleware("cache.headers:private;max_age=5")->group(function() use ($class){
-            Route::get('/',[$class,'all']);
-            Route::post('/',[$class,'create']);
+            Route::get('/',[$class,'all'])->name($class::name());
+            Route::post('/',[$class,'create'])->name($class::name().'.create');;
             
-            Route::post('/{item}',[$class,'update']);
-            Route::get('/{item}',[$class,'get']);
-            Route::delete('/{item}',[$class,'delete']);
+            Route::post('/{item}',[$class,'update'])->name($class::name().'.update');
+            Route::get('/{item}',[$class,'get'])->name($class::name().'.show');;
+            Route::delete('/{item}',[$class,'delete'])->name($class::name().'.delete');
         });
     };
 };

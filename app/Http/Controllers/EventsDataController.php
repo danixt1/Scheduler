@@ -15,6 +15,9 @@ class EventsDataController extends ApiController{
             EventsDataResource::class
         );
     }
+    public static function name(): string{
+        return "EventsData";
+    }
     protected function makeChecker(array &$data): Checker{
         $checker = new Checker($data);
         $checker->checkType('type','integer')->

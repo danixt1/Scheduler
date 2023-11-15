@@ -16,6 +16,9 @@ class SenderController extends ApiController{
     public function __construct(){
         parent::__construct(['name','ids'],SenderResource::class);
     }
+    static public function name(): string{
+        return "Sender";
+    }
     protected function data_update(string $id,array $dataToSet):int{
         if(isset($dataToSet['ids'])){
             DB::transaction(function() use($dataToSet,$id){

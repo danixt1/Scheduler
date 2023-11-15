@@ -18,8 +18,8 @@ class LocSenderResource extends JsonResource
         return [
             'id'=>$this->id,
             'isFallback'=>$this->isFallback === 1,
-            'location'=>URL::to("/api/v1/locations/".$this->location_id),
-            'sender'=>URL::to("/api/v1/senders/".$this->sender_id)
+            'location'=>route("Location.show",["item"=>$this->location_id]),
+            'sender'=>route("Sender.show",["item"=>$this->sender_id])
         ];
     }
 }

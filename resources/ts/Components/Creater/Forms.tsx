@@ -47,6 +47,7 @@ export interface BaseFormAttrs extends React.HTMLAttributes<HTMLElement>{
     children:ReactNode,
     disableSubmit?:boolean
 };
+//TODO delete this and use the PageSwitcher
 export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(val:string)=>void]);
 export const CloseWindownContext = createContext((a:boolean)=>{});
 

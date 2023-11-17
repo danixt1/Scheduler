@@ -1,1 +1,0 @@
-//TODO change the system of close page from the Creater FormSelector contexts to a dedicated system to switch pages

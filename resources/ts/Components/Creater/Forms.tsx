@@ -6,6 +6,7 @@ import { SelectWithApiData, InputZone, BaseInput } from "./Inputs";
 import { ApiItem, FuncApi } from "../../Api/Api";
 import { ItemEvCalendar, ItemLocation, ItemSender } from "../../Api/Items";
 import { SenderList } from "../ResourceList/Lists";
+import { EditListContext } from "../ResourceList/Parts";
 
 interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
     api:FuncApi<any,any>
@@ -48,6 +49,12 @@ export interface BaseFormAttrs extends React.HTMLAttributes<HTMLElement>{
     children:ReactNode,
     disableSubmit?:boolean
 };
+export interface FormWithListAttrs extends React.HTMLAttributes<HTMLElement>{
+    data:FormData<any>
+    children:ReactNode
+    apiItem?:ApiItem<Record<any,any>>
+    list():ReactNode
+}
 //TODO delete this and use the PageSwitcher
 export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(val:string)=>void]);
 export const CloseWindownContext = createContext((a:boolean)=>{});
@@ -81,6 +88,21 @@ export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseForm
                 <input type="submit" value={"Salvar " + displayName} ref={submitRef} className="inp-creater" disabled={disableSubmit} />
             </div>
         </form>
+    )
+}
+export function FormWithList({children,data,apiItem,list,...props}:FormWithListAttrs){
+    let [noHidden,setNext] = useContext(FormSelector);
+    let [editItem,setItemToEdit]= useState(apiItem as undefined | ApiItem<Record<string,any>>);
+    return (
+        <div hidden={noHidden != data.name}>
+            <EditListContext.Provider value={setItemToEdit}>
+                <BaseForm {...props} data={data} apiItem={editItem}>
+                    {children}
+                </BaseForm>
+                {list()}
+            </EditListContext.Provider>
+
+        </div>
     )
 }
 export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
@@ -218,15 +240,21 @@ export function FormLocation({...props}:FormBuilder<ItemLocation>){
     )
 }
 export function FormSender({...props}:FormBuilder<ItemSender>){
-    let data = formBuilder<CreatingSender>('sender','Sender',process,API.sender);
-    const {register,handleSubmit,control,setValue} = data;
+    let defValues:any = undefined;
     if(props.apiItem){
+        console.log(props.apiItem);
+        
+        defValues = {
+            name:props.apiItem.name
+        }
         //make system to get value with refered foreign key
         API.location.withForeign('sender',props.apiItem.id).then(e =>{
             setValue('locations',e.list.map(a =>{return {value:a.id + ''}}))
         })
-        //setValue('locations',props.apiItem.)
     }
+    let data = formBuilder<CreatingSender>('sender','Sender',process,API.sender,defValues);
+    //TODO Attention need to isolate the formBuilder method to refresh form data
+    const {register,handleSubmit,control,setValue} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let [locs,setLocs] = useState([] as {name:string,id:number}[]);
     let [inLoadState,setLoad] = useState(true);
@@ -260,20 +288,17 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         }
     },[])
     return (
-        <span>
-            <BaseForm data={data} {...props}>
-                <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
-                {fields.map((e,index) =>{
-                    return (
-                        <select key={e.id} {...register(`locations.${index}.value`)}>
-                            {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
-                        </select>
-                    )
-                })}
-                <input type="button" value={'Adicionar local'} disabled={inLoadState} onClick={()=>{if(fields.length < 4){append({value:''})}}} />
-                <SenderList/>
-            </BaseForm>
-        </span>
+        <FormWithList data={data} list={SenderList} {...props}>
+            <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
+            {fields.map((e,index) =>{
+                return (
+                    <select key={e.id} {...register(`locations.${index}.value`)}>
+                        {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
+                    </select>
+                )
+            })}
+            <input type="button" value={'Adicionar local'} disabled={inLoadState} onClick={()=>{if(fields.length < 4){append({value:''})}}} />
+        </FormWithList>
     )
 }
 export function formBuilder<FORM_INFO extends Record<string, any>>(name:string,displayName:string,processData:(data:any)=>any,api:FuncApi<any,any>,def:any = undefined):FormData<FORM_INFO>{

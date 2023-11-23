@@ -12,13 +12,11 @@ interface ResourceListI<T>{
 interface ResourceItemI{
     propsToReturn:string[]
     item:ApiItem<Record<any,any>>
-    onEdit(item:ApiItem<any>):void
 }
 export function ResourceList<PROPS extends {[index:string]:any} = {[index:string]:any}>({api,propsToreturn,renamer}:ResourceListI<PROPS>){
     let [isLoading,setLoadingState] = useState(true);
     let [data,setData] = useState([] as any[]);
     let [head,setHead] = useState([] as string[]);
-    let onEdit = useContext(EditListContext);
     useEffect(()=>{
         api().then(e =>{
             let list = e.list;
@@ -28,36 +26,45 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
             setData(list);
             setLoadingState(false);
         })
-    })
+    },[]);
     return (
         <div>
             <span hidden={!isLoading}>Carregando Dados...</span>
             <table hidden={isLoading}>
-            <tr className="rl-t-head">
-                {head.map(e => <th>{e}</th>)}
-                <th></th>
-                <th></th>
-            </tr>
-            {
-                data.map(e => <ResourceItem propsToReturn={propsToreturn} item={e} onEdit={onEdit}/> )
-            }
+                <thead className="rl-t-head">
+                    <tr>
+                        {head.map((e,i) => <th key={'head-'+i}>{e}</th>)}
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {
+                        data.map((e,i) => <ResourceItem propsToReturn={propsToreturn} item={e} key={'list-'+i}/> )
+                    }
+                </tbody>
             </table>
         </div>
     )
 }
 
-export function ResourceItem({propsToReturn,item,onEdit}:ResourceItemI){
+export function ResourceItem({propsToReturn,item}:ResourceItemI){
+    let onEdit = useContext(EditListContext);
     return (
         <tr>
             {
-                propsToReturn.map( e =>{
+                propsToReturn.map( (e,i) =>{
                     let value = item[e];
+                    let finalVal:any = '';
                     switch(typeof value){
                         case "boolean":
-                            return <th>{value ? "Sim" : "Não"}</th>;
+                            finalVal =value ? "Sim" : "Não";
+                            break;
                         default:
-                            return <th>{value}</th>
+                            finalVal = value;
+                            break;
                     }
+                    return <th key={'i-'+i}>{finalVal}</th>
                 })
             }
             <th onClick={()=>{onEdit(item)}}><SvgEdit/></th>

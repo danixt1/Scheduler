@@ -5,6 +5,7 @@ import { CalendarEventContext } from "../../contexts";
 import { SelectWithApiData, InputZone, BaseInput } from "./Inputs";
 import { ApiItem, FuncApi } from "../../Api/Api";
 import { ItemEvCalendar, ItemLocation, ItemSender } from "../../Api/Items";
+import { SenderList } from "../ResourceList/Lists";
 
 interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
     api:FuncApi<any,any>
@@ -259,17 +260,20 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         }
     },[])
     return (
-        <BaseForm data={data} {...props}>
-            <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
-            {fields.map((e,index) =>{
-                return (
-                    <select key={e.id} {...register(`locations.${index}.value`)}>
-                        {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
-                    </select>
-                )
-            })}
-            <input type="button" value={'Adicionar local'} disabled={inLoadState} onClick={()=>{if(fields.length < 4){append({value:''})}}} />
-        </BaseForm>
+        <span>
+            <BaseForm data={data} {...props}>
+                <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
+                {fields.map((e,index) =>{
+                    return (
+                        <select key={e.id} {...register(`locations.${index}.value`)}>
+                            {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
+                        </select>
+                    )
+                })}
+                <input type="button" value={'Adicionar local'} disabled={inLoadState} onClick={()=>{if(fields.length < 4){append({value:''})}}} />
+                <SenderList/>
+            </BaseForm>
+        </span>
     )
 }
 export function formBuilder<FORM_INFO extends Record<string, any>>(name:string,displayName:string,processData:(data:any)=>any,api:FuncApi<any,any>,def:any = undefined):FormData<FORM_INFO>{

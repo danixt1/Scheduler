@@ -1,1 +1,0 @@
-//TODO make the sender, location and event lists components

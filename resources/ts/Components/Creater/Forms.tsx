@@ -5,7 +5,7 @@ import { CalendarEventContext } from "../../contexts";
 import { SelectWithApiData, InputZone, BaseInput } from "./Inputs";
 import { ApiItem, FuncApi } from "../../Api/Api";
 import { ItemEvCalendar, ItemLocation, ItemSender } from "../../Api/Items";
-import { SenderList } from "../ResourceList/Lists";
+import { LocationList, SenderList } from "../ResourceList/Lists";
 import { EditListContext } from "../ResourceList/Parts";
 
 interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
@@ -49,11 +49,11 @@ export interface BaseFormAttrs extends React.HTMLAttributes<HTMLElement>{
     children:ReactNode,
     disableSubmit?:boolean
 };
-export interface FormWithListAttrs extends React.HTMLAttributes<HTMLElement>{
-    data:FormData<any>
-    children:ReactNode
+export interface FormWithListAttrs{
+    name:string
     apiItem?:ApiItem<Record<any,any>>
     list():ReactNode
+    form(item:{apiItem?:ApiItem<Record<any,any>>}):ReactNode
 }
 //TODO delete this and use the PageSwitcher
 export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(val:string)=>void]);
@@ -63,8 +63,8 @@ export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseForm
     let {register,name,displayName,processing,handleSubmit,api,reset} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let submitRef = createRef<HTMLInputElement>();
-    let item_id = apiItem ? apiItem.id : undefined;
-    props.onSubmit = handleSubmit((data)=>{
+        let item_id = apiItem ? apiItem.id : undefined;
+        props.onSubmit = handleSubmit((data)=>{
         let btn =submitRef.current!;
         let result = processing(data);
         btn.disabled = true;
@@ -79,7 +79,7 @@ export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseForm
                 });
             });
     })
-    return (
+        return (
         <form {...props} hidden={noHidden != name}>
             <h1>{item_id ? 'Editar' : 'Novo'} {' ' +displayName}</h1>
             {item_id && <input type="hidden" {...register('id',{value:item_id})}/>}
@@ -90,19 +90,27 @@ export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseForm
         </form>
     )
 }
-export function FormWithList({children,data,apiItem,list,...props}:FormWithListAttrs){
+export function FormWithList({name,apiItem,list,form}:FormWithListAttrs){
     let [noHidden,setNext] = useContext(FormSelector);
-    let [editItem,setItemToEdit]= useState(apiItem as undefined | ApiItem<Record<string,any>>);
+    let [editItem,setItemToEdit]= useState( {apiItem} as  {apiItem?:ApiItem<Record<string,any>>});
     return (
-        <div hidden={noHidden != data.name}>
-            <EditListContext.Provider value={setItemToEdit}>
-                <BaseForm {...props} data={data} apiItem={editItem}>
-                    {children}
-                </BaseForm>
+        <div hidden={noHidden != name}>
+            <EditListContext.Provider value={(item)=>{setItemToEdit({apiItem:item});}}>
+                {form(editItem)}
                 {list()}
             </EditListContext.Provider>
 
         </div>
+    )
+}
+export function FormListSender(){
+    return (
+        <FormWithList name="sender" form={FormSender} list={SenderList} />
+    )
+}
+export function FormListLocation(){
+    return (
+        <FormWithList name="location" form={FormLocation} list={LocationList}/>
     )
 }
 export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
@@ -240,19 +248,7 @@ export function FormLocation({...props}:FormBuilder<ItemLocation>){
     )
 }
 export function FormSender({...props}:FormBuilder<ItemSender>){
-    let defValues:any = undefined;
-    if(props.apiItem){
-        console.log(props.apiItem);
-        
-        defValues = {
-            name:props.apiItem.name
-        }
-        //make system to get value with refered foreign key
-        API.location.withForeign('sender',props.apiItem.id).then(e =>{
-            setValue('locations',e.list.map(a =>{return {value:a.id + ''}}))
-        })
-    }
-    let data = formBuilder<CreatingSender>('sender','Sender',process,API.sender,defValues);
+    let data = formBuilder<CreatingSender>('sender','Sender',process,API.sender);
     //TODO Attention need to isolate the formBuilder method to refresh form data
     const {register,handleSubmit,control,setValue} = data;
     let [noHidden,setNext] = useContext(FormSelector);
@@ -266,6 +262,18 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         let ids = data.locations.filter(e =>e.value != '').map(e => Number.parseInt(e.value));
         return {name:data.name,ids}
     }
+    useEffect(()=>{
+        if(props.apiItem){
+            setValue('name',props.apiItem.name);
+            
+            //make system to get value with refered foreign key
+            API.location.withForeign('sender',props.apiItem.id).then(e =>{
+                for(const item of e.list){
+                    append({value:item.id + ''})
+                }
+            })
+        }
+    },[props.apiItem])
     useEffect(()=>{
         API.location().then(e =>{
             setLocs(e.list.map(e =>{
@@ -288,7 +296,7 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         }
     },[])
     return (
-        <FormWithList data={data} list={SenderList} {...props}>
+        <BaseForm data={data} {...props}>
             <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
             {fields.map((e,index) =>{
                 return (
@@ -298,7 +306,7 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
                 )
             })}
             <input type="button" value={'Adicionar local'} disabled={inLoadState} onClick={()=>{if(fields.length < 4){append({value:''})}}} />
-        </FormWithList>
+        </BaseForm>
     )
 }
 export function formBuilder<FORM_INFO extends Record<string, any>>(name:string,displayName:string,processData:(data:any)=>any,api:FuncApi<any,any>,def:any = undefined):FormData<FORM_INFO>{

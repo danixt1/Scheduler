@@ -26,6 +26,25 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
             setData(list);
             setLoadingState(false);
         })
+        api.on('create',onCreate);
+        api.on('delete',onDelete);
+        api.on('update',onEdit);
+        return ()=>{
+            api.off('create',onCreate);
+            api.off('delete',onDelete);
+            api.off('update',onEdit);
+        }
+        function onCreate(newItem:any){
+            setData(e => [...e,newItem])
+        }
+        function onDelete(e:any){
+            let id:number = e.id;
+            setData(a => [...a.filter(t => t.id != id)])
+        }
+        function onEdit(e:any){
+            let id:number = e.id;
+            setData(a => [...a])
+        }
     },[]);
     return (
         <div>

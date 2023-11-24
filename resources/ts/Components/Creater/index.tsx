@@ -1,5 +1,5 @@
 import React, { createContext, useState } from "react";
-import { CloseWindownContext, FormEvent, FormLocation, FormSelector, FormSender } from "./Forms";
+import { CloseWindownContext, FormEvent, FormListLocation, FormListSender, FormLocation, FormSelector, FormSender } from "./Forms";
 import { FormPopUp } from "../PopUp";
 export interface EventData{
     id:number
@@ -29,8 +29,8 @@ function CreaterWindow({close,hidden}:{close:(a:boolean)=>void,hidden:boolean}){
             <div className="cr-forms">
                 <FormSelector.Provider value={[actualVisible,setVisible]}>
                     <CloseWindownContext.Provider value={close}>
-                        <FormLocation/>
-                        <FormSender/>
+                        <FormListLocation/>
+                        <FormListSender/>
                         <FormEvent/>
                     </CloseWindownContext.Provider>
                 </FormSelector.Provider>

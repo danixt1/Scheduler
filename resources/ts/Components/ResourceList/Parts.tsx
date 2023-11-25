@@ -1,6 +1,7 @@
 import { useState,useEffect, createContext, useContext } from "react";
 import { ApiItem, FuncApi } from "../../Api/Api"
 import { SvgEdit, SvgTrash } from "../../Svgs";
+import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 export const EditListContext = createContext((item:ApiItem<any>)=>{});
 //TODO make the base structure from the resource list
 type ResourceItemProp =number | string | boolean | {ref:number,name:string}
@@ -17,12 +18,23 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
     let [isLoading,setLoadingState] = useState(true);
     let [data,setData] = useState([] as any[]);
     let [head,setHead] = useState([] as string[]);
+    const collumHelper = createColumnHelper<any>();
+    const columns = propsToreturn.map(prop =>{
+        let header = prop;
+        if(renamer){
+            if(renamer[prop]){
+                header = renamer[prop]
+            }
+        }
+        return collumHelper.accessor(prop,{
+            header:header,
+            cell:(e)=>e.getValue()
+        })
+    })
+    const table = useReactTable({columns,data,getCoreRowModel:getCoreRowModel()})
     useEffect(()=>{
         api().then(e =>{
             let list = e.list;
-            if(list.length > 0){
-                setHead(renamer ? propsToreturn.map(e => renamer[e] || e) : propsToreturn)
-            }
             setData(list);
             setLoadingState(false);
         })
@@ -42,7 +54,6 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
             setData(a => [...a.filter(t => t.id != id)])
         }
         function onEdit(e:any){
-            let id:number = e.id;
             setData(a => [...a])
         }
     },[]);
@@ -51,15 +62,31 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
             <span hidden={!isLoading}>Carregando Dados...</span>
             <table hidden={isLoading}>
                 <thead className="rl-t-head">
-                    <tr>
-                        {head.map((e,i) => <th key={'head-'+i}>{e}</th>)}
-                        <th></th>
-                        <th></th>
-                    </tr>
+                    {
+                        table.getHeaderGroups().map(headerGroup =>(
+                            <tr key={headerGroup.id}>
+                                {
+                                    headerGroup.headers.map(header =>(
+                                        <th key={header.id}>
+                                            {flexRender(header.column.columnDef.header,header.getContext())}
+                                        </th>
+                                    ))
+                                }
+                            </tr>
+                        ))
+                    }
                 </thead>
                 <tbody>
                     {
-                        data.map((e,i) => <ResourceItem propsToReturn={propsToreturn} item={e} key={'list-'+i}/> )
+                        table.getRowModel().rows.map(row => (
+                            <tr key={row.id}>
+                                {
+                                    row.getVisibleCells().map(cell =>(
+                                        <th key={cell.id}>{cell.getValue() as any}</th>
+                                    ))
+                                }
+                            </tr>
+                        ))
                     }
                 </tbody>
             </table>

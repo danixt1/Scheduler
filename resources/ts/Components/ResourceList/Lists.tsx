@@ -8,3 +8,5 @@ export function LocationList(){
     //TODO Location need to handle new properties to be added
     return <ResourceList api={API.location} propsToreturn={["name"]} renamer={{name:"Nome"}}/>
 }
+
+// TODO try https://tanstack.com/table/v8

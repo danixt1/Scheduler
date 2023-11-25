@@ -1,4 +1,4 @@
-import { useState,useEffect, createContext, useContext } from "react";
+import { useState,useEffect, createContext, useContext, HTMLProps, useRef } from "react";
 import { ApiItem, FuncApi } from "../../Api/Api"
 import { SvgEdit, SvgTrash } from "../../Svgs";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
@@ -18,6 +18,7 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
     let [isLoading,setLoadingState] = useState(true);
     let [data,setData] = useState([] as any[]);
     let [head,setHead] = useState([] as string[]);
+    const [rowSelection, setRowSelection] = useState({})
     const collumHelper = createColumnHelper<any>();
     const columns = propsToreturn.map(prop =>{
         let header = prop;
@@ -31,7 +32,27 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
             cell:(e)=>e.getValue()
         })
     })
-    const table = useReactTable({columns,data,getCoreRowModel:getCoreRowModel()})
+    columns.unshift(collumHelper.accessor('select',{
+        id:'select',
+        header:({table})=>(<CheckBox 
+            indeterminate={table.getIsSomeRowsSelected()}
+            checked = {table.getIsAllRowsSelected()}
+            onChange = {table.getToggleAllRowsSelectedHandler()}/>),
+        cell:({row})=>(<CheckBox 
+            checked={row.getIsSelected()}
+            disabled = {!row.getCanSelect()}
+            indeterminate = {row.getIsSomeSelected()}
+            onChange={row.getToggleSelectedHandler()}
+        />)
+    }));
+    const table = useReactTable({
+        state:{rowSelection},
+        columns,
+        data,
+        enableRowSelection: true,
+        onRowSelectionChange: setRowSelection,
+        getCoreRowModel:getCoreRowModel()
+    })
     useEffect(()=>{
         api().then(e =>{
             let list = e.list;
@@ -82,7 +103,7 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
                             <tr key={row.id}>
                                 {
                                     row.getVisibleCells().map(cell =>(
-                                        <th key={cell.id}>{cell.getValue() as any}</th>
+                                        <th key={cell.id}>{flexRender(cell.column.columnDef.cell,cell.getContext())}</th>
                                     ))
                                 }
                             </tr>
@@ -90,10 +111,25 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
                     }
                 </tbody>
             </table>
+            <button 
+            disabled = {Object.keys(rowSelection).length == 0}
+            onClick={()=>{table.getSelectedRowModel().flatRows.forEach(e =>e.original.delete())}
+            }><SvgTrash/></button>
         </div>
     )
 }
+function CheckBox({indeterminate,...rest}: { indeterminate?: boolean } & HTMLProps<HTMLInputElement>){
+    const ref = useRef<HTMLInputElement>(null!)
 
+    useEffect(() => {
+        if (typeof indeterminate === 'boolean') {
+            ref.current.indeterminate = !rest.checked && indeterminate
+        }
+    }, [ref, indeterminate])
+    return (
+        <input type="checkbox" ref={ref} className={'rl-checkbox'} {...rest}/>
+    )
+}
 export function ResourceItem({propsToReturn,item}:ResourceItemI){
     let onEdit = useContext(EditListContext);
     return (

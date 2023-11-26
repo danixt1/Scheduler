@@ -14,12 +14,18 @@ interface ResourceItemI{
     propsToReturn:string[]
     item:ApiItem<Record<any,any>>
 }
+/**
+ * Render a list to show the items from the specified API resource.
+ * 
+ * use the context `EditListContext` to receive the selected element to by edited. 
+ */
 export function ResourceList<PROPS extends {[index:string]:any} = {[index:string]:any}>({api,propsToreturn,renamer}:ResourceListI<PROPS>){
     let [isLoading,setLoadingState] = useState(true);
     let [data,setData] = useState([] as any[]);
     let [head,setHead] = useState([] as string[]);
     const [rowSelection, setRowSelection] = useState({})
     const collumHelper = createColumnHelper<any>();
+    let onEdit = useContext(EditListContext);
     const columns = propsToreturn.map(prop =>{
         let header = prop;
         if(renamer){
@@ -45,6 +51,10 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
             onChange={row.getToggleSelectedHandler()}
         />)
     }));
+    columns.push(collumHelper.accessor('edit',{
+        header:'',
+        cell:({row})=>(<button onClick={()=>onEdit(row.original)}><SvgEdit/></button>)
+    }))
     const table = useReactTable({
         state:{rowSelection},
         columns,

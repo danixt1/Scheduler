@@ -53,7 +53,7 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
     }));
     columns.push(collumHelper.accessor('edit',{
         header:'',
-        cell:({row})=>(<button onClick={()=>onEdit(row.original)}><SvgEdit/></button>)
+        cell:({row})=>(<button onClick={()=>onEdit(row.original)} className="rl-edit"><SvgEdit/></button>)
     }))
     const table = useReactTable({
         state:{rowSelection},
@@ -122,6 +122,7 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
                 </tbody>
             </table>
             <button 
+            className="rl-delete"
             disabled = {Object.keys(rowSelection).length == 0}
             onClick={()=>{table.getSelectedRowModel().flatRows.forEach(e =>e.original.delete())}
             }><SvgTrash/></button>

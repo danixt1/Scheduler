@@ -4,7 +4,7 @@ import { buildApi } from "../Api/Conector";
 import { EditListContext, ResourceList } from "../Components/ResourceList/Parts";
 import { render,screen,fireEvent } from "@testing-library/react";
 
-const DEF_PORT = 9423;
+const DEF_PORT = 9424;//FIXME Check server not closing in Api.test.ts
 const API_URL = "http://localhost:"+DEF_PORT;
 
 describe('ResourceList',()=>{

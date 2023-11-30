@@ -1,4 +1,4 @@
-import { assert, describe, it } from "vitest";
+import { afterEach, assert, beforeEach, describe, it } from "vitest";
 import {createServer }from "http";
 import { buildApi } from "../Api/Conector";
 import { EditListContext, ResourceList } from "../Components/ResourceList/Parts";
@@ -8,21 +8,34 @@ const DEF_PORT = 9423;
 const API_URL = "http://localhost:"+DEF_PORT;
 
 describe('ResourceList',()=>{
+    let server:ReturnType<typeof createServer>;
+    beforeEach(()=>{
+        server = createServer();
+        return new Promise<void>(res =>{
+            server.listen(DEF_PORT,res);
+        })
+    })
+    afterEach(async ()=>{
+        if(server.listening){
+            await new Promise<any>(res =>{
+                server.close(res);
+            })
+        }
+    })
     it('show the elements in list',()=>{
         const PREFIX = "@item-test";
-        return new Promise((res,rej) =>{
+        return new Promise<void>((res,rej) =>{
             let a = [
                 {name:PREFIX + '1'},
                 {name:PREFIX + '2'}
             ]
-            let server = createServer((req,res)=>{
+            server.on('request',(req,res)=>{
                 responseList(res,a);
             });
             server.on('error',()=>{
                 rej();
-                server.close();
-            })
-            server.listen(DEF_PORT,async ()=>{
+            });
+            (async ()=>{
                 let api = buildApi({url:API_URL},{
                     test:"test"
                 });
@@ -31,43 +44,39 @@ describe('ResourceList',()=>{
                     await screen.findByText(PREFIX + '1');
                     await screen.findByText(PREFIX+'2');
                 }catch(e){
-                    server.close(()=>{
-                        rej(e);
-                    })
+                    rej(e);
                 }
-                server.close(res);
-            })
-
+                res()
+            })();
         })
     });
     it('delete the element',()=>{
-        return new Promise((resolve,rej)=>{
-            const ITEM_NAME = '@item-to-delete@';
+        const ITEM_NAME = '@item-to-delete@';
+        return new Promise<void>((resolve,rej)=>{
             let timeout:any = 0;
             let item = {name:ITEM_NAME,id:0};
-            let server = createServer((req,res)=>{
+            server.on('request',(req,res)=>{
                 if(req.method === "GET"){
                     responseList(res,[item]);
                     return;
                 }
                 res.end();
                 if(req.method === "DELETE" && req.url?.endsWith('0')){
-                    server.close(()=>{
-                        clearTimeout(timeout);
-                        resolve(true);
-                    })
+                    clearTimeout(timeout);
+                    resolve();
                     return;
                 }
-                server.close(()=>{
-                    rej("invalid request");
-                })
+                rej("invalid request");
             });
-            server.listen(DEF_PORT,async ()=>{
+            (async ()=>{
                 let api = buildApi({url:API_URL},{
                     test:"test"
                 });
                 const {container} = render(<ResourceList api={api.test} propsToreturn={['name']}/>)
                 try{
+                    timeout = setTimeout(()=>{
+                        rej("timeout")
+                    },300);
                     await screen.findByText(ITEM_NAME);
                     let checkbox = container.getElementsByClassName('rl-checkbox')[0];
                     let ok =fireEvent.click(checkbox);
@@ -76,23 +85,17 @@ describe('ResourceList',()=>{
                     if(!(ok && ok2)){
                         throw new Error("Failed Click Event");
                     }
-                    timeout = setTimeout(()=>{
-                        server.close(()=>{rej("timeout")});
-                    },100);
                 }catch(e){
-                    server.close(()=>{rej(e)});
+                    rej(e)
                 }
-            })
+            })();
         })
     })
     it('active edit context',async ()=>{
         const DEF_NAME = 'testing@';
         let finish:any = null;
-        let server = createServer((req,res)=>{
+        server.on('request',(req,res)=>{
             responseList(res,[{name:DEF_NAME,id:0}]);
-        })
-        await new Promise<void>(res=>{
-            server.listen(DEF_PORT,res);
         })
         let api = buildApi({url:API_URL},{
             test:"test"
@@ -117,17 +120,13 @@ describe('ResourceList',()=>{
         }))
         assert.isTrue(fireEvent.click(editBtn));
         await finisher;
-        await new Promise(res =>server.close(res));
     })
     it('add new colums to show',async ()=>{
         const DEF_NAME = 'testing@';
         const DEF_SECOND = 'testrng2';
-        let server = createServer((req,res)=>{
+        server.on('request',(req,res)=>{
             responseList(res,[{name:DEF_NAME,id:0,data:{a:11,b:DEF_SECOND}}]);
         })
-        await new Promise<void>(res =>{
-            server.listen(DEF_PORT,res);
-        });
         let api = buildApi({url:API_URL},{
             test:"test"
         });
@@ -144,10 +143,8 @@ describe('ResourceList',()=>{
             await screen.findByText(DEF_SECOND);
             await screen.findByText("new@colum");
         }catch(e){
-            await new Promise(res =>server.close(res));
             throw e;
         }
-        await new Promise(res =>server.close(res));
     })
 })
 function responseList(res:any,list:any[]){

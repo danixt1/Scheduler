@@ -22,33 +22,22 @@ describe('ResourceList',()=>{
             })
         }
     })
-    it('show the elements in list',()=>{
+    it('show the elements in list',async()=>{
         const PREFIX = "@item-test";
-        return new Promise<void>((res,rej) =>{
-            let a = [
-                {name:PREFIX + '1'},
-                {name:PREFIX + '2'}
-            ]
-            server.on('request',(req,res)=>{
-                responseList(res,a);
-            });
-            server.on('error',()=>{
-                rej();
-            });
-            (async ()=>{
-                let api = buildApi({url:API_URL},{
-                    test:"test"
-                });
-                render(<ResourceList api={api.test} propsToreturn={["name"]} />);
-                try{
-                    await screen.findByText(PREFIX + '1');
-                    await screen.findByText(PREFIX+'2');
-                }catch(e){
-                    rej(e);
-                }
-                res()
-            })();
-        })
+        let a = [
+            {name:PREFIX + '1'},
+            {name:PREFIX + '2'}
+        ]
+        server.on('request',(req,res)=>{
+            responseList(res,a);
+        });
+        let api = buildApi({url:API_URL},{
+            test:"test"
+        });
+        render(<ResourceList api={api.test} propsToreturn={["name"]} />);
+        await screen.findByText(PREFIX + '1');
+        await screen.findByText(PREFIX+'2');
+        assert(true);
     });
     it('delete the element',()=>{
         const ITEM_NAME = '@item-to-delete@';

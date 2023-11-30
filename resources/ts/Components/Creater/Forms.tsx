@@ -5,9 +5,9 @@ import { CalendarEventContext } from "../../contexts";
 import { SelectWithApiData, InputZone, BaseInput } from "./Inputs";
 import { ApiItem, FuncApi } from "../../Api/Api";
 import { ItemEvCalendar, ItemLocation, ItemSender } from "../../Api/Items";
-import { LocationList, SenderList } from "../ResourceList/Lists";
+import { LocationList, SenderList } from "../ResourceList";
 import { EditListContext } from "../ResourceList/Parts";
-
+//TODO fix edit system
 interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
     api:FuncApi<any,any>
     name:string

@@ -3,26 +3,27 @@ import { ApiItem, FuncApi } from "../../Api/Api"
 import { SvgEdit, SvgTrash } from "../../Svgs";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 export const EditListContext = createContext((item:ApiItem<any>)=>{});
-//TODO make the base structure from the resource list
-type ResourceItemProp =number | string | boolean | {ref:number,name:string}
+
 interface ResourceListI<T>{
     api:FuncApi<T,any>
     renamer?:Record<string,string>
     propsToreturn:string[]
+    renderProp?:Record<string,(item:any)=>string | number | boolean>
+    disableEditBtn?:boolean
 }
 interface ResourceItemI{
     propsToReturn:string[]
     item:ApiItem<Record<any,any>>
 }
+type PROPSList = Record<string,any>
 /**
  * Render a list to show the items from the specified API resource.
  * 
  * use the context `EditListContext` to receive the selected element to by edited. 
  */
-export function ResourceList<PROPS extends {[index:string]:any} = {[index:string]:any}>({api,propsToreturn,renamer}:ResourceListI<PROPS>){
+export function ResourceList<PROPS extends PROPSList = PROPSList>({api,propsToreturn,renamer,renderProp,...props}:ResourceListI<PROPS>){
     let [isLoading,setLoadingState] = useState(true);
     let [data,setData] = useState([] as any[]);
-    let [head,setHead] = useState([] as string[]);
     const [rowSelection, setRowSelection] = useState({})
     const collumHelper = createColumnHelper<any>();
     let onEdit = useContext(EditListContext);
@@ -38,6 +39,13 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
             cell:(e)=>e.getValue()
         })
     })
+    if(renderProp){
+        for(const [retPropName,cellRender] of Object.entries(renderProp)){
+            columns.push(collumHelper.accessor(retPropName,{
+                cell:({row})=>cellRender(row.original)
+            }))
+        }
+    }
     columns.unshift(collumHelper.accessor('select',{
         id:'select',
         header:({table})=>(<CheckBox 
@@ -51,10 +59,12 @@ export function ResourceList<PROPS extends {[index:string]:any} = {[index:string
             onChange={row.getToggleSelectedHandler()}
         />)
     }));
-    columns.push(collumHelper.accessor('edit',{
-        header:'',
-        cell:({row})=>(<button onClick={()=>onEdit(row.original)} className="rl-edit"><SvgEdit/></button>)
-    }))
+    if(!props.disableEditBtn){
+        columns.push(collumHelper.accessor('edit',{
+            header:'',
+            cell:({row})=>(<button onClick={()=>onEdit(row.original)} className="rl-edit"><SvgEdit/></button>)
+        }))
+    }
     const table = useReactTable({
         state:{rowSelection},
         columns,

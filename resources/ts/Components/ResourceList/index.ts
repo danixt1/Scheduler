@@ -1,1 +1,5 @@
-//TODO Pass all lists to index
+import { SenderList,LocationList } from "./Lists";
+export {
+    SenderList,
+    LocationList
+}

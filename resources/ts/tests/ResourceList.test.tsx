@@ -1,19 +1,16 @@
-//TODO make test to check if elements is showed
-//TODO make test from delete btn
-//TODO make test from edit btn(check if the edit context is activated)
-
 import { assert, describe, it } from "vitest";
 import {createServer }from "http";
 import { buildApi } from "../Api/Conector";
 import { EditListContext, ResourceList } from "../Components/ResourceList/Parts";
 import { render,screen,fireEvent } from "@testing-library/react";
+
 const DEF_PORT = 9423;
 const API_URL = "http://localhost:"+DEF_PORT;
 
 describe('ResourceList',()=>{
     it('show the elements in list',()=>{
+        const PREFIX = "@item-test";
         return new Promise((res,rej) =>{
-            let PREFIX = "@item-test";
             let a = [
                 {name:PREFIX + '1'},
                 {name:PREFIX + '2'}
@@ -120,6 +117,37 @@ describe('ResourceList',()=>{
         }))
         assert.isTrue(fireEvent.click(editBtn));
         await finisher;
+        await new Promise(res =>server.close(res));
+    })
+    it('add new colums to show',async ()=>{
+        const DEF_NAME = 'testing@';
+        const DEF_SECOND = 'testrng2';
+        let server = createServer((req,res)=>{
+            responseList(res,[{name:DEF_NAME,id:0,data:{a:11,b:DEF_SECOND}}]);
+        })
+        await new Promise<void>(res =>{
+            server.listen(DEF_PORT,res);
+        });
+        let api = buildApi({url:API_URL},{
+            test:"test"
+        });
+        let columsToRender = {
+            ["new@colum"](e:any){
+                return e.data.a;
+            },
+            ["second@colum"](e:any){
+                return e.data.b;
+            }
+        }
+        const {container} = render(<ResourceList api={api.test} renderProp={columsToRender} propsToreturn={["name"]} />);
+        try{
+            await screen.findByText(DEF_SECOND);
+            await screen.findByText("new@colum");
+        }catch(e){
+            await new Promise(res =>server.close(res));
+            throw e;
+        }
+        await new Promise(res =>server.close(res));
     })
 })
 function responseList(res:any,list:any[]){

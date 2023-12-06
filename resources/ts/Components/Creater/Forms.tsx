@@ -260,7 +260,7 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
     });
     function process(data:CreatingSender){
         let ids = data.locations.filter(e =>e.value != '').map(e => Number.parseInt(e.value));
-        return {name:data.name,ids}
+        return {name:data.name,ids,id:data.id}
     }
     useEffect(()=>{
         if(props.apiItem){

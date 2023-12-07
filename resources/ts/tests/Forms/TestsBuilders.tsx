@@ -49,10 +49,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
         it(name,()=>{
             axios.defaults.baseURL = "http://localhost:"+ DEF_PORT;
             return new Promise<void>((res=>{
-                fn(()=>{
-                    onRequest = defReq;
-                    res();
-                });
+                fn(res);
             }))
         })
     }
@@ -101,17 +98,25 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                     requests = [...base.additionalRequests,...requests];
                 }
                 test(testName,(testEnd)=>{
+                    let havePassedInAssert = false;
                     onRequest = (req,res)=>{
                         for(const resToRequest of requests){
                             if(resToRequest.path === req.url){
+                                let value = resToRequest.value;
+                                let send =Array.isArray(value) ? renderListResponse(value) : value;
                                 res.writeHead(200, { 'Content-Type': 'application/json' }).
-                                end(JSON.stringify(resToRequest.value));
+                                end(JSON.stringify(send));
                                 return;
                             }
                         }
-                        assert.equal(req.url,expectedPath);
-                        testEnd();
                         res.writeHead(200, { 'Content-Type': 'application/json' }).end(renderResponseTo(req));
+                        if(!havePassedInAssert){
+                            havePassedInAssert = true;
+                            assert.equal(req.url,expectedPath);
+                            testEnd();
+                        }else{
+                            console.warn("A not expected request has been passed after the end of the request.\n request to path:"+req.url);
+                        }
                     };
                     this.renderAndClick(form,apiItem,afterFormRender);
                 });

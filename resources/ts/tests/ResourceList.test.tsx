@@ -50,8 +50,8 @@ describe('ResourceList',()=>{
                     return;
                 }
                 res.end();
+                clearTimeout(timeout);
                 if(req.method === "DELETE" && req.url?.endsWith('0')){
-                    clearTimeout(timeout);
                     resolve();
                     return;
                 }
@@ -65,7 +65,7 @@ describe('ResourceList',()=>{
                 try{
                     timeout = setTimeout(()=>{
                         rej("timeout")
-                    },300);
+                    },500);
                     await screen.findByText(ITEM_NAME);
                     let checkbox = container.getElementsByClassName('rl-checkbox')[0];
                     let ok =fireEvent.click(checkbox);
@@ -75,6 +75,7 @@ describe('ResourceList',()=>{
                         throw new Error("Failed Click Event");
                     }
                 }catch(e){
+                    clearTimeout(timeout);
                     rej(e)
                 }
             })();

@@ -1,10 +1,12 @@
-import { assert, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, describe, expect, it } from 'vitest';
 import { ApiItem } from '../../Api/Api';
 import { fireEvent, render,screen } from '@testing-library/react';
 import { FormBuilder } from '../../Components/Creater/Forms';
-import { createServer } from 'http';
+import { createServer,IncomingMessage } from 'http';
+import axios from 'axios';
+//Remake the server to continue opened after the test end
 type FormElem = (props:FormBuilder<any>)=>JSX.Element;
-
+const DEF_PORT = 9543;
 interface EditStructure{
     apiItem:ApiItem<Record<any,any>>
     additionalRequests:{path:string,value:any | any[],required:boolean}[]
@@ -12,7 +14,31 @@ interface EditStructure{
     afterFormRender:(baseElem:HTMLElement)=>Promise<void>
 }
 
-export function MakeFormEditTest(itemApi:ApiItem<Record<any,any>>,form:FormElem){
+export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:FormElem){
+    let onRequest:Exclude<Parameters<typeof createServer>[1],undefined> = (req,res)=>{res.writeHead(200, { 'Content-Type': 'application/json' }).end(renderResponseTo(req))}
+    let server = createServer((req,res)=>{
+        onRequest(req,res);
+    })
+    let defReq = (req:any,res:any)=>{
+        console.log("Request called not inside in test:" + req.url);
+        res.writeHead(200, { 'Content-Type': 'application/json' }).end(renderResponseTo(req));
+    };
+    beforeAll(()=>{
+        return new Promise((res)=>{
+            server.listen(DEF_PORT,res);
+        })
+    })
+    afterEach(()=>{
+        onRequest = defReq;
+    })
+    afterAll(()=>{
+        return new Promise<any>((res)=>{
+            //wait to detect if is request anything after the tests.
+            setTimeout(()=>{
+                server.close(res);
+            },100);
+        })
+    })
     let structure:EditStructure = {
         apiItem:itemApi,
         additionalRequests:[],
@@ -21,8 +47,12 @@ export function MakeFormEditTest(itemApi:ApiItem<Record<any,any>>,form:FormElem)
     }
     function test(name:string,fn:(res:()=>void)=>void){
         it(name,()=>{
+            axios.defaults.baseURL = "http://localhost:"+ DEF_PORT;
             return new Promise<void>((res=>{
-                fn(res);
+                fn(()=>{
+                    onRequest = defReq;
+                    res();
+                });
             }))
         })
     }
@@ -37,7 +67,7 @@ export function MakeFormEditTest(itemApi:ApiItem<Record<any,any>>,form:FormElem)
                 test(testName,(testEnd)=>{
                     let reqsToRun = requests.map<number>((e)=>e.required ? 1 : 0).reduce((a,b)=>a+b,0);
                     let allRequiredPasseds = reqsToRun === 0;
-                    let server = createServer((req,res)=>{
+                    onRequest =(req,res)=>{
                         for(const resToRequest of requests){
                             if(resToRequest.path === req.url){
                                 res.writeHead(200, { 'Content-Type': 'application/json' }).
@@ -59,26 +89,31 @@ export function MakeFormEditTest(itemApi:ApiItem<Record<any,any>>,form:FormElem)
                             }
                             let jsonData = JSON.parse(data);
                             assert.deepEqual(jsonData,expectedFinalResult,"Have diference with the expected final result");
-                            server.close(testEnd);
+                            testEnd();
                         })
                         res.writeHead(200).end();
-                    })
-                    server.listen(9543,()=>{
-                        this.renderAndClick(form,apiItem,afterFormRender);
-                    });
+                    }
                 });
             },
-            makeRequestTest(testName:string,expectedPath:string){
-                let {form, apiItem,afterFormRender} = actStr;
+            testRequest(testName:string,expectedPath:string){
+                let {form, apiItem,afterFormRender,additionalRequests:requests} = actStr;
+                if(base){
+                    requests = [...base.additionalRequests,...requests];
+                }
                 test(testName,(testEnd)=>{
-                    let server = createServer((req,res)=>{
+                    onRequest = (req,res)=>{
+                        for(const resToRequest of requests){
+                            if(resToRequest.path === req.url){
+                                res.writeHead(200, { 'Content-Type': 'application/json' }).
+                                end(JSON.stringify(resToRequest.value));
+                                return;
+                            }
+                        }
                         assert.equal(req.url,expectedPath);
-                        res.end();
-                        server.close(testEnd);
-                    });
-                    server.listen(9543,()=>{
-                        this.renderAndClick(form,apiItem,afterFormRender);
-                    });
+                        testEnd();
+                        res.writeHead(200, { 'Content-Type': 'application/json' }).end(renderResponseTo(req));
+                    };
+                    this.renderAndClick(form,apiItem,afterFormRender);
                 });
                 return this;
             },
@@ -110,4 +145,26 @@ export function MakeFormEditTest(itemApi:ApiItem<Record<any,any>>,form:FormElem)
         }
     }
     return makeThis(structure)
+}
+function renderResponseTo(req:IncomingMessage){
+    let final =req.url ? req.url[req.url.length - 1] : '';
+    let n = Number.parseInt(final);
+    let result:any = "";
+    if(req.method === "GET"){
+        return "";
+    }
+    if(!Number.isNaN(n)){
+        result =req.url?.includes('?') ? renderListResponse([]) : {};
+    }else{
+        result = {};
+    }
+    return JSON.stringify(result);
+}
+function renderListResponse(list:any[]){
+    return {
+        data:{
+            meta:{current_page:1,from:1,last_page:1,per_page:10,to:10,total:list.length},
+            data:list
+        }
+    }
 }

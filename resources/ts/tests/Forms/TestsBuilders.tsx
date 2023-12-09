@@ -1,29 +1,32 @@
 import { afterAll, afterEach, assert, beforeAll, describe, expect, it } from 'vitest';
 import { ApiItem } from '../../Api/Api';
-import { fireEvent, render,screen } from '@testing-library/react';
+import { RenderResult, act, fireEvent, render,screen } from '@testing-library/react';
 import { FormBuilder } from '../../Components/Creater/Forms';
-import { createServer,IncomingMessage } from 'http';
+import { createServer,IncomingMessage,ServerResponse } from 'http';
 import axios from 'axios';
 //Remake the server to continue opened after the test end
 type FormElem = (props:FormBuilder<any>)=>JSX.Element;
+type ReqInfo = {path:string,value:any | any[],required:boolean};
 const DEF_PORT = 9543;
 interface EditStructure{
     apiItem:ApiItem<Record<any,any>>
-    additionalRequests:{path:string,value:any | any[],required:boolean}[]
+    additionalRequests:ReqInfo[]
     form:FormElem
     afterFormRender:(baseElem:HTMLElement)=>Promise<void>
 }
-
+const METHODS = ["GET","POST","DELETE","UPDATE"];
 export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:FormElem){
     let onRequest:Exclude<Parameters<typeof createServer>[1],undefined> = (req,res)=>{res.writeHead(200, { 'Content-Type': 'application/json' }).end(renderResponseTo(req))}
     let server = createServer((req,res)=>{
         onRequest(req,res);
     })
+    let original = axios.defaults.baseURL;
     let defReq = (req:any,res:any)=>{
         console.log("Request called not inside in test:" + req.url);
         res.writeHead(200, { 'Content-Type': 'application/json' }).end(renderResponseTo(req));
     };
     beforeAll(()=>{
+        axios.defaults.baseURL = "http://localhost:"+ DEF_PORT;
         return new Promise((res)=>{
             server.listen(DEF_PORT,res);
         })
@@ -34,9 +37,8 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
     afterAll(()=>{
         return new Promise<any>((res)=>{
             //wait to detect if is request anything after the tests.
-            setTimeout(()=>{
-                server.close(res);
-            },100);
+            axios.defaults.baseURL = original;
+            server.close(res);
         })
     })
     let structure:EditStructure = {
@@ -47,9 +49,10 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
     }
     function test(name:string,fn:(res:()=>void)=>void){
         it(name,()=>{
-            axios.defaults.baseURL = "http://localhost:"+ DEF_PORT;
             return new Promise<void>((res=>{
-                fn(res);
+                fn(()=>{
+                    res();
+                });
             }))
         })
     }
@@ -99,31 +102,37 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 }
                 test(testName,(testEnd)=>{
                     let havePassedInAssert = false;
+                    let allInterceptHaveRunned = false;
+                    let interceptor = RequestInteceptor(requests,()=>{
+                        allInterceptHaveRunned = true;
+                        checkFinish();
+                    });
                     onRequest = (req,res)=>{
-                        for(const resToRequest of requests){
-                            if(resToRequest.path === req.url){
-                                let value = resToRequest.value;
-                                let send =Array.isArray(value) ? renderListResponse(value) : value;
-                                res.writeHead(200, { 'Content-Type': 'application/json' }).
-                                end(JSON.stringify(send));
-                                return;
-                            }
+                        if(interceptor(req,res)){
+                            return;
                         }
                         res.writeHead(200, { 'Content-Type': 'application/json' }).end(renderResponseTo(req));
                         if(!havePassedInAssert){
                             havePassedInAssert = true;
                             assert.equal(req.url,expectedPath);
-                            testEnd();
+                            res.on('finish',checkFinish);
                         }else{
                             console.warn("A not expected request has been passed after the end of the request.\n request to path:"+req.url);
                         }
                     };
                     this.renderAndClick(form,apiItem,afterFormRender);
+                    function checkFinish(){
+                        if(allInterceptHaveRunned && havePassedInAssert){
+                            testEnd();
+                        }
+                    }
                 });
                 return this;
             },
             async renderAndClick(Elem:FormElem = actStr.form,apiItem:ApiItem<Record<any, any>> =actStr.apiItem,afterRender = actStr.afterFormRender ){
-                const {container}= render(<Elem apiItem={apiItem} />);
+                const {container}= await  act<RenderResult>(()=>{
+                    return render(<Elem apiItem={apiItem} />);
+                })
                 await afterRender(container);
                 let elem =container.getElementsByClassName("inp-creater")[0];
                 assert.isNotNull(elem,"Submit button not found");
@@ -143,6 +152,13 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 actStr.afterFormRender = fn;
                 return this;
             },
+            /**
+             * Add a expected path to by called in the test process
+             * @param path 
+             * @param resp 
+             * @param required case true tests fail after 600ms with no call
+             * @returns 
+             */
             addResponse(path:string,resp:any | any[],required:boolean =false){
                 actStr.additionalRequests.push({path,value:resp,required});
                 return this;
@@ -150,6 +166,49 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
         }
     }
     return makeThis(structure)
+}
+function RequestInteceptor(requests:ReqInfo[],onFinished:()=>void){
+    let toValidate = requests.map<number>((e)=>e.required ? 1 : 0).reduce((prev,curr)=>prev+curr,0);
+    let newReqs:(ReqInfo & {m:string})[] = requests.map(e =>{
+        let method = "GET";
+        let path = e.path;
+        for(const act of METHODS){
+            if(e.path.startsWith(act)){
+                method = act;
+                path = e.path.substring(act.length);
+            }
+        }
+        return {
+            ...e,
+            path,
+            m:method
+        }
+    });
+    let validated = 0;
+    let finishCalled = false;
+    return function(req:IncomingMessage,res:ServerResponse){
+        
+        for(const resToRequest of newReqs){
+            let method = resToRequest.m;
+            if(resToRequest.path === req.url && method == req.method){
+                if(resToRequest.required){
+                    validated++;
+                }
+                let value = resToRequest.value;
+                let send =Array.isArray(value) ? renderListResponse(value) : value;
+                res.writeHead(200, { 'Content-Type': 'application/json' }).
+                end(JSON.stringify(send));
+                if(toValidate == validated){
+                    if(!finishCalled){
+                        onFinished();
+                        finishCalled = true;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 }
 function renderResponseTo(req:IncomingMessage){
     let final =req.url ? req.url[req.url.length - 1] : '';
@@ -167,9 +226,7 @@ function renderResponseTo(req:IncomingMessage){
 }
 function renderListResponse(list:any[]){
     return {
-        data:{
-            meta:{current_page:1,from:1,last_page:1,per_page:10,to:10,total:list.length},
-            data:list
-        }
+        meta:{current_page:1,from:1,last_page:1,per_page:10,to:10,total:list.length},
+        data:list
     }
 }

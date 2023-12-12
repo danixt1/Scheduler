@@ -13,6 +13,7 @@ interface EditStructure{
     additionalRequests:ReqInfo[]
     form:FormElem
     afterFormRender:(baseElem:HTMLElement)=>Promise<void>
+    afterIntercepts:()=>Promise<void> | void
 }
 const METHODS = ["GET","POST","DELETE","UPDATE"];
 export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:FormElem){
@@ -23,7 +24,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
     let original = axios.defaults.baseURL;
     let defReq = (req:any,res:any)=>{
         console.log("Request called not inside in test:" + req.url);
-        res.writeHead(200, { 'Content-Type': 'application/json' }).end(renderResponseTo(req));
+        jsonRes(res,renderResponseTo(req));
     };
     beforeAll(()=>{
         axios.defaults.baseURL = "http://localhost:"+ DEF_PORT;
@@ -36,7 +37,6 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
     })
     afterAll(()=>{
         return new Promise<any>((res)=>{
-            //wait to detect if is request anything after the tests.
             axios.defaults.baseURL = original;
             server.close(res);
         })
@@ -45,14 +45,13 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
         apiItem:itemApi,
         additionalRequests:[],
         form:form,
-        afterFormRender:async ()=>{}
+        afterFormRender:async ()=>{},
+        afterIntercepts:()=>{}
     }
     function test(name:string,fn:(res:()=>void)=>void){
         it(name,()=>{
             return new Promise<void>((res=>{
-                fn(()=>{
-                    res();
-                });
+                fn(res);
             }))
         })
     }
@@ -70,8 +69,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                     onRequest =(req,res)=>{
                         for(const resToRequest of requests){
                             if(resToRequest.path === req.url){
-                                res.writeHead(200, { 'Content-Type': 'application/json' }).
-                                end(JSON.stringify(resToRequest.value));
+                                jsonRes(res,JSON.stringify(resToRequest.value));
                                 if(resToRequest.required){
                                     reqsToRun --;
                                     allRequiredPasseds = reqsToRun === 0;
@@ -96,7 +94,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 });
             },
             testRequest(testName:string,expectedPath:string){
-                let {form, apiItem,afterFormRender,additionalRequests:requests} = actStr;
+                let {form, apiItem,afterFormRender,additionalRequests:requests,afterIntercepts} = actStr;
                 if(base){
                     requests = [...base.additionalRequests,...requests];
                 }
@@ -104,14 +102,22 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                     let havePassedInAssert = false;
                     let allInterceptHaveRunned = false;
                     let interceptor = RequestInteceptor(requests,()=>{
-                        allInterceptHaveRunned = true;
-                        checkFinish();
+                        let prms =afterIntercepts();
+                        if(prms instanceof Promise){
+                            prms.then(next);
+                        }else{
+                            next();
+                        }
+                        function next(){
+                            allInterceptHaveRunned = true;
+                            checkFinish();
+                        }
                     });
                     onRequest = (req,res)=>{
                         if(interceptor(req,res)){
                             return;
                         }
-                        res.writeHead(200, { 'Content-Type': 'application/json' }).end(renderResponseTo(req));
+                        jsonRes(res,renderResponseTo(req));
                         if(!havePassedInAssert){
                             havePassedInAssert = true;
                             assert.equal(req.url,expectedPath);
@@ -148,6 +154,10 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 actStr.apiItem = itemApi;
                 return this;
             },
+            afterRequests(fn:()=>Promise<void> | void){
+                actStr.afterIntercepts = fn;
+                return this;
+            },
             afterRender(fn:(baseElem: HTMLElement) => Promise<void>){
                 actStr.afterFormRender = fn;
                 return this;
@@ -159,7 +169,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
              * @param required case true tests fail after 600ms with no call
              * @returns 
              */
-            addResponse(path:string,resp:any | any[],required:boolean =false){
+            interceptRequest(path:string,resp:any | any[],required:boolean =false){
                 actStr.additionalRequests.push({path,value:resp,required});
                 return this;
             }
@@ -196,8 +206,7 @@ function RequestInteceptor(requests:ReqInfo[],onFinished:()=>void){
                 }
                 let value = resToRequest.value;
                 let send =Array.isArray(value) ? renderListResponse(value) : value;
-                res.writeHead(200, { 'Content-Type': 'application/json' }).
-                end(JSON.stringify(send));
+                jsonRes(res,JSON.stringify(send));
                 if(toValidate == validated){
                     if(!finishCalled){
                         onFinished();
@@ -218,8 +227,10 @@ function renderResponseTo(req:IncomingMessage){
         return "";
     }
     if(!Number.isNaN(n)){
+        //Case is number check if is a number passed a param
         result =req.url?.includes('?') ? renderListResponse([]) : {};
     }else{
+        //Case final number not is number return a expected object
         result = {};
     }
     return JSON.stringify(result);
@@ -229,4 +240,7 @@ function renderListResponse(list:any[]){
         meta:{current_page:1,from:1,last_page:1,per_page:10,to:10,total:list.length},
         data:list
     }
+}
+function jsonRes(res:ServerResponse,data:any){
+    res.writeHead(200, { 'Content-Type': 'application/json' }).end(data);
 }

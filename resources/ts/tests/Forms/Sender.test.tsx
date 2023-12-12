@@ -6,14 +6,21 @@ import { buildApiItem } from '../../Api/Conector';
 describe("editing",()=>{
     let apiItem = buildApiItem({id:1,name:"test"},"/api/v1/senders");
     
-    TestWorkbanchFormEdit(apiItem,FormSender)
+    let locations = [
+        {id:1,sender_id:1,name:"test",data:{u:"http://0.0.0.0"}},
+        {id:2,sender_id:1,name:"test2",data:{u:"http://0.0.0.0"}},
+        {id:3,sender_id:2,name:"notFromItem",data:{u:"http://0.0.0.0"}}
+    ]
+    let workbanch = TestWorkbanchFormEdit(apiItem,FormSender)
     //Intercept the request to show the locations list
-    .addResponse('GET/api/v1/locations',[],true)
+    .interceptRequest('GET/api/v1/locations',locations,true)
     //Intercept the call to get the locations from the sender
-    .addResponse('GET/api/v1/locations?sender_id=1',[],true)
+    .interceptRequest('GET/api/v1/locations?sender_id=1',locations.filter(e =>e.sender_id == 1),true);
+    
+    workbanch.startNew()
     //Intercept the item refresh made after the request
-    .addResponse('GET/api/v1/senders/1',{},true)
-    //check if is trigged POST to senders
+    .interceptRequest('GET/api/v1/senders/1',{},true)
+    //check if triggers the POST to sender url
     .testRequest("Send the id from the edited element","/api/v1/senders/1");
 
     it("don't change unexpected properties")

@@ -1,6 +1,6 @@
 import { afterAll, afterEach, assert, beforeAll, describe, expect, it } from 'vitest';
 import { ApiItem } from '../../Api/Api';
-import { RenderResult, act, fireEvent, render,screen } from '@testing-library/react';
+import { RenderResult, act, fireEvent, render,screen, waitFor } from '@testing-library/react';
 import { FormBuilder } from '../../Components/Creater/Forms';
 import { createServer,IncomingMessage,ServerResponse } from 'http';
 import axios from 'axios';
@@ -12,7 +12,7 @@ interface EditStructure{
     apiItem:ApiItem<Record<any,any>>
     additionalRequests:ReqInfo[]
     form:FormElem
-    afterFormRender:(baseElem:HTMLElement)=>Promise<void>
+    afterFormRender:(baseElem:HTMLElement)=>(Promise<void> | void)
     afterIntercepts:()=>Promise<void> | void
 }
 const METHODS = ["GET","POST","DELETE","UPDATE"];
@@ -57,25 +57,17 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
     }
     function makeThis(actStr:EditStructure,base?:EditStructure){
         return {
-            makeComparationTest(expectedFinalResult:any,testName:string){
-                let {form, apiItem,additionalRequests:requests,afterFormRender} = actStr;
+            testCheckSendedObject(expectedObj:any,testName:string){
+                let {form, apiItem,additionalRequests:requests,afterFormRender,afterIntercepts} = actStr;
                 //Get Base actual request and the new requests
                 if(base){
                     requests = [...base.additionalRequests,...requests];
                 }
+                let interceptor = RequestInteceptor(requests,afterIntercepts);
                 test(testName,(testEnd)=>{
-                    let reqsToRun = requests.map<number>((e)=>e.required ? 1 : 0).reduce((a,b)=>a+b,0);
-                    let allRequiredPasseds = reqsToRun === 0;
                     onRequest =(req,res)=>{
-                        for(const resToRequest of requests){
-                            if(resToRequest.path === req.url){
-                                jsonRes(res,JSON.stringify(resToRequest.value));
-                                if(resToRequest.required){
-                                    reqsToRun --;
-                                    allRequiredPasseds = reqsToRun === 0;
-                                }
-                                return;
-                            }
+                        if(interceptor(req,res)){
+                            return;
                         }
                         let data:string = "";
                         req.on('data',(e)=>{
@@ -86,11 +78,12 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                                 return;
                             }
                             let jsonData = JSON.parse(data);
-                            assert.deepEqual(jsonData,expectedFinalResult,"Have diference with the expected final result");
+                            assert.deepEqual(jsonData,expectedObj,"Have diference with the expected final result");
                             testEnd();
                         })
                         res.writeHead(200).end();
                     }
+                    this.renderAndClick(form,apiItem,afterFormRender);
                 });
             },
             testRequest(testName:string,expectedPath:string){
@@ -136,12 +129,14 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 return this;
             },
             async renderAndClick(Elem:FormElem = actStr.form,apiItem:ApiItem<Record<any, any>> =actStr.apiItem,afterRender = actStr.afterFormRender ){
-                const {container}= await  act<RenderResult>(()=>{
-                    return render(<Elem apiItem={apiItem} />);
-                })
-                await afterRender(container);
+                const {container}= render(<Elem apiItem={apiItem} />);
+                let res = afterRender(container);
+                if(res instanceof Promise){
+                    await res;
+                };
                 let elem =container.getElementsByClassName("inp-creater")[0];
                 assert.isNotNull(elem,"Submit button not found");
+                await waitFor(()=>expect(elem).toBeEnabled(),{container});
                 assert(fireEvent.click(elem),"Not clicked in element");
                 return container;
             },
@@ -158,7 +153,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 actStr.afterIntercepts = fn;
                 return this;
             },
-            afterRender(fn:(baseElem: HTMLElement) => Promise<void>){
+            afterRender(fn:(baseElem: HTMLElement) => Promise<void> | void){
                 actStr.afterFormRender = fn;
                 return this;
             },

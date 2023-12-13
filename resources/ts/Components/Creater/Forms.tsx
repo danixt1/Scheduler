@@ -12,7 +12,7 @@ interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<
     api:FuncApi<any,any>
     name:string
     displayName:string
-    processing:(data:any)=>any
+    processing:(data:any)=>Promise<any> | any
 }
 interface Sender{
     name:string
@@ -68,16 +68,23 @@ export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseForm
         let btn =submitRef.current!;
         let result = processing(data);
         btn.disabled = true;
-        api(result).
-            finally(()=>{btn.disabled = false}).
-            then(()=>{reset((e:any)=>{
-                let res:Record<string,any> = {};
-                for(const [varName,value] of Object.entries(e)){
-                    res[varName] = Array.isArray(value) ? [] : '';
-                }
-                return res;
-                });
+        if(result instanceof Promise){
+            result.then(next);
+        }else{
+            next(result);
+        }
+        function next(result:any){
+            api(result).
+                finally(()=>{btn.disabled = false}).
+                then(()=>{reset((e:any)=>{
+                    let res:Record<string,any> = {};
+                    for(const [varName,value] of Object.entries(e)){
+                        res[varName] = Array.isArray(value) ? [] : '';
+                    }
+                    return res;
+                    });
             });
+        }
     })
         return (
         <form {...props} hidden={noHidden != name}>
@@ -254,6 +261,9 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
     let [noHidden,setNext] = useContext(FormSelector);
     let [locs,setLocs] = useState([] as {name:string,id:number}[]);
     let [inLoadState,setLoad] = useState(true);
+
+    let isEditMode = props.apiItem != undefined;
+    let [isLoadedIds,setLoadedIdsState] = useState(false);
     const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
         control,
         name: "locations", 
@@ -271,6 +281,7 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
                 for(const item of e.list){
                     append({value:item.id + ''})
                 }
+                setLoadedIdsState(true);
             })
         }
     },[props.apiItem])
@@ -296,7 +307,7 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         }
     },[])
     return (
-        <BaseForm data={data} {...props}>
+        <BaseForm data={data} disableSubmit={isEditMode ? !isLoadedIds : false} {...props}>
             <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
             {fields.map((e,index) =>{
                 return (

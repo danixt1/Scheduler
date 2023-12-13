@@ -14,15 +14,16 @@ describe("editing",()=>{
     let workbanch = TestWorkbanchFormEdit(apiItem,FormSender)
     //Intercept the request to show the locations list
     .interceptRequest('GET/api/v1/locations',locations,true)
+    //Intercept the item refresh made after the request
+    .interceptRequest('GET/api/v1/senders/1',{},true)
     //Intercept the call to get the locations from the sender
     .interceptRequest('GET/api/v1/locations?sender_id=1',locations.filter(e =>e.sender_id == 1),true);
     
     workbanch.startNew()
-    //Intercept the item refresh made after the request
-    .interceptRequest('GET/api/v1/senders/1',{},true)
     //check if triggers the POST to sender url
     .testRequest("Send the id from the edited element","/api/v1/senders/1");
 
-    it("don't change unexpected properties")
+    workbanch.startNew()
+    .testCheckSendedObject({name:"test",ids:[1,2,3]},"Don't change unexpected properties");
     it("correct change the property")
 })

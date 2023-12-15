@@ -24,6 +24,6 @@ describe("editing",()=>{
     .testRequest("Send the id from the edited element","/api/v1/senders/1");
 
     workbanch.startNew()
-    .testCheckSendedObject({name:"test",ids:[1,2,3]},"Don't change unexpected properties");
+    .testObjectSendedToServer({name:"test",ids:[1,2]},"(backend)Don't change unexpected properties");
     it("correct change the property")
 })

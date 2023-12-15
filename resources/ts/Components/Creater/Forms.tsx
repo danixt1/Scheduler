@@ -60,14 +60,28 @@ export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(v
 export const CloseWindownContext = createContext((a:boolean)=>{});
 
 export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseFormAttrs){
+
     let {register,name,displayName,processing,handleSubmit,api,reset} = data;
     let [noHidden,setNext] = useContext(FormSelector);
-    let submitRef = createRef<HTMLInputElement>();
-        let item_id = apiItem ? apiItem.id : undefined;
-        props.onSubmit = handleSubmit((data)=>{
-        let btn =submitRef.current!;
+    let item_id = apiItem ? apiItem.id : undefined;
+    let [isInSubmitPhase,setSubmitPhase] = useState(false);
+    let [btnSubmitState,setBtnSubmitState] = useState(true);
+
+    useEffect(()=>{
+        if(isInSubmitPhase){
+            return;
+        }
+        if(disableSubmit != undefined){
+            setBtnSubmitState(disableSubmit);
+        }else{
+            setBtnSubmitState(false);
+        }
+    },[disableSubmit]);
+
+    props.onSubmit = handleSubmit((data)=>{
+        setSubmitPhase(true);
+        setBtnSubmitState(true);
         let result = processing(data);
-        btn.disabled = true;
         if(result instanceof Promise){
             result.then(next);
         }else{
@@ -75,24 +89,29 @@ export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseForm
         }
         function next(result:any){
             api(result).
-                finally(()=>{btn.disabled = false}).
+                finally(()=>{setBtnSubmitState(false);}).
                 then(()=>{reset((e:any)=>{
                     let res:Record<string,any> = {};
                     for(const [varName,value] of Object.entries(e)){
                         res[varName] = Array.isArray(value) ? [] : '';
                     }
                     return res;
-                    });
+                });
             });
         }
     })
-        return (
-        <form {...props} hidden={noHidden != name}>
+    return (
+        <form {...props} hidden={noHidden != name} >
             <h1>{item_id ? 'Editar' : 'Novo'} {' ' +displayName}</h1>
             {item_id && <input type="hidden" {...register('id',{value:item_id})}/>}
             {children}
             <div>
-                <input type="submit" value={"Salvar " + displayName} ref={submitRef} className="inp-creater" disabled={disableSubmit} />
+                <input 
+                type="submit" 
+                data-testid="submit-btn" 
+                value={"Salvar " + displayName} 
+                disabled={btnSubmitState}
+                className="inp-creater" />
             </div>
         </form>
     )
@@ -128,7 +147,6 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
         let item = props.apiItem;
         let date = item.date;
         let dateStr = (new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()).slice(0, -1);
-        console.log(dateStr);
         
         defValues = {
             date:dateStr,
@@ -255,15 +273,15 @@ export function FormLocation({...props}:FormBuilder<ItemLocation>){
     )
 }
 export function FormSender({...props}:FormBuilder<ItemSender>){
+
     let data = formBuilder<CreatingSender>('sender','Sender',process,API.sender);
-    //TODO Attention need to isolate the formBuilder method to refresh form data
+
     const {register,handleSubmit,control,setValue} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let [locs,setLocs] = useState([] as {name:string,id:number}[]);
     let [inLoadState,setLoad] = useState(true);
+    let [disableSubmit,setSubmitState] = useState(props.apiItem != undefined);
 
-    let isEditMode = props.apiItem != undefined;
-    let [isLoadedIds,setLoadedIdsState] = useState(false);
     const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
         control,
         name: "locations", 
@@ -273,17 +291,21 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         return {name:data.name,ids,id:data.id}
     }
     useEffect(()=>{
-        if(props.apiItem){
-            setValue('name',props.apiItem.name);
-            
-            //make system to get value with refered foreign key
-            API.location.withForeign('sender',props.apiItem.id).then(e =>{
-                for(const item of e.list){
-                    append({value:item.id + ''})
-                }
-                setLoadedIdsState(true);
-            })
+        if(!props.apiItem){
+            return;
         }
+        
+        //make system to get value with refered foreign key
+        API.location.withForeign('sender',props.apiItem.id).then(e =>{
+            for(const item of e.list){
+                append({value:item.id + ''})
+            }
+            //SetValue need to be the last item to be updated or is cleared
+            setTimeout(()=>{
+                setValue('name',props.apiItem!.name);
+            });
+            setSubmitState(false);
+        })
     },[props.apiItem])
     useEffect(()=>{
         API.location().then(e =>{
@@ -307,8 +329,8 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         }
     },[])
     return (
-        <BaseForm data={data} disableSubmit={isEditMode ? !isLoadedIds : false} {...props}>
-            <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
+        <BaseForm {...props} data={data} disableSubmit={disableSubmit}>
+            <InputZone title="Nome" register={register('name',{required:true})} type='text' />
             {fields.map((e,index) =>{
                 return (
                     <select key={e.id} {...register(`locations.${index}.value`)}>

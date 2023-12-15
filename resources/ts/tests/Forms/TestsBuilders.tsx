@@ -1,6 +1,6 @@
 import { afterAll, afterEach, assert, beforeAll, describe, expect, it } from 'vitest';
 import { ApiItem } from '../../Api/Api';
-import { RenderResult, act, fireEvent, render,screen, waitFor } from '@testing-library/react';
+import { fireEvent, getByTestId, render,screen, waitFor } from '@testing-library/react';
 import { FormBuilder } from '../../Components/Creater/Forms';
 import { createServer,IncomingMessage,ServerResponse } from 'http';
 import axios from 'axios';
@@ -11,7 +11,7 @@ const DEF_PORT = 9543;
 interface EditStructure{
     apiItem:ApiItem<Record<any,any>>
     additionalRequests:ReqInfo[]
-    form:FormElem
+    Form:FormElem
     afterFormRender:(baseElem:HTMLElement)=>(Promise<void> | void)
     afterIntercepts:()=>Promise<void> | void
 }
@@ -23,7 +23,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
     })
     let original = axios.defaults.baseURL;
     let defReq = (req:any,res:any)=>{
-        console.log("Request called not inside in test:" + req.url);
+        console.log("Request called not inside in test:",req.method,req.url);
         jsonRes(res,renderResponseTo(req));
     };
     beforeAll(()=>{
@@ -44,7 +44,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
     let structure:EditStructure = {
         apiItem:itemApi,
         additionalRequests:[],
-        form:form,
+        Form:form,
         afterFormRender:async ()=>{},
         afterIntercepts:()=>{}
     }
@@ -57,14 +57,15 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
     }
     function makeThis(actStr:EditStructure,base?:EditStructure){
         return {
-            testCheckSendedObject(expectedObj:any,testName:string){
-                let {form, apiItem,additionalRequests:requests,afterFormRender,afterIntercepts} = actStr;
+            testObjectSendedToServer(expectedObj:any,testName:string){
+                let {Form: form, apiItem,additionalRequests:requests,afterFormRender,afterIntercepts} = actStr;
                 //Get Base actual request and the new requests
                 if(base){
                     requests = [...base.additionalRequests,...requests];
                 }
-                let interceptor = RequestInteceptor(requests,afterIntercepts);
                 test(testName,(testEnd)=>{
+                    let finish = TestFinishEvent(afterIntercepts,testEnd);
+                    let interceptor = RequestInteceptor(requests,finish.finishedIntercepts);
                     onRequest =(req,res)=>{
                         if(interceptor(req,res)){
                             return;
@@ -75,38 +76,32 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                         })
                         req.on('end',()=>{
                             if(req.method == "GET"){
+                                console.log("Not intercepted request",req.method,req.url);
                                 return;
                             }
                             let jsonData = JSON.parse(data);
                             assert.deepEqual(jsonData,expectedObj,"Have diference with the expected final result");
-                            testEnd();
+                            finish.mainTestEnd();
                         })
                         res.writeHead(200).end();
                     }
                     this.renderAndClick(form,apiItem,afterFormRender);
                 });
             },
+            testAfterRender(testName:string,afterRender:()=>Promise<void> | void){
+
+            },
             testRequest(testName:string,expectedPath:string){
-                let {form, apiItem,afterFormRender,additionalRequests:requests,afterIntercepts} = actStr;
+                let {Form: form, apiItem,afterFormRender,additionalRequests:requests,afterIntercepts} = actStr;
                 if(base){
                     requests = [...base.additionalRequests,...requests];
                 }
                 test(testName,(testEnd)=>{
+                    let finish = TestFinishEvent(afterIntercepts,testEnd);
                     let havePassedInAssert = false;
-                    let allInterceptHaveRunned = false;
-                    let interceptor = RequestInteceptor(requests,()=>{
-                        let prms =afterIntercepts();
-                        if(prms instanceof Promise){
-                            prms.then(next);
-                        }else{
-                            next();
-                        }
-                        function next(){
-                            allInterceptHaveRunned = true;
-                            checkFinish();
-                        }
-                    });
+                    let interceptor = RequestInteceptor(requests,finish.finishedIntercepts);
                     onRequest = (req,res)=>{
+                        
                         if(interceptor(req,res)){
                             return;
                         }
@@ -114,30 +109,30 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                         if(!havePassedInAssert){
                             havePassedInAssert = true;
                             assert.equal(req.url,expectedPath);
-                            res.on('finish',checkFinish);
+                            finish.mainTestEnd();
                         }else{
                             console.warn("A not expected request has been passed after the end of the request.\n request to path:"+req.url);
                         }
                     };
                     this.renderAndClick(form,apiItem,afterFormRender);
-                    function checkFinish(){
-                        if(allInterceptHaveRunned && havePassedInAssert){
-                            testEnd();
-                        }
-                    }
                 });
                 return this;
             },
-            async renderAndClick(Elem:FormElem = actStr.form,apiItem:ApiItem<Record<any, any>> =actStr.apiItem,afterRender = actStr.afterFormRender ){
+            async renderAndClick(Elem:FormElem = actStr.Form,apiItem:ApiItem<Record<any, any>> =actStr.apiItem,afterRender = actStr.afterFormRender ){
+                let container =await this.render(Elem,apiItem,afterRender);
+
+                let elem =screen.getByTestId("submit-btn");
+                expect(elem,"Submit button not found").toBeInstanceOf(HTMLInputElement);
+                await waitFor(()=>expect(elem).toBeEnabled());
+                fireEvent.click(elem);
+                return container;
+            },
+            async render(Elem:FormElem = actStr.Form,apiItem:ApiItem<Record<any, any>> =actStr.apiItem,afterRender = actStr.afterFormRender){
                 const {container}= render(<Elem apiItem={apiItem} />);
                 let res = afterRender(container);
                 if(res instanceof Promise){
                     await res;
                 };
-                let elem =container.getElementsByClassName("inp-creater")[0];
-                assert.isNotNull(elem,"Submit button not found");
-                await waitFor(()=>expect(elem).toBeEnabled(),{container});
-                assert(fireEvent.click(elem),"Not clicked in element");
                 return container;
             },
             startNew(){
@@ -234,6 +229,28 @@ function renderListResponse(list:any[]){
     return {
         meta:{current_page:1,from:1,last_page:1,per_page:10,to:10,total:list.length},
         data:list
+    }
+}
+function TestFinishEvent(afterIntercepts:()=>void | Promise<void>,onTestFinish:()=>void){
+    let isFinishedIntercepts = false;
+    let isFinishedMainTest = false;
+    return {
+        async finishedIntercepts(){
+            let res = afterIntercepts();
+            if(res instanceof Promise){
+                await res;
+            }
+            isFinishedIntercepts = true;
+            if(isFinishedMainTest){
+                onTestFinish();
+            }
+        },
+        mainTestEnd(){
+            isFinishedMainTest = true;
+            if(isFinishedIntercepts){
+                onTestFinish();
+            }
+        }
     }
 }
 function jsonRes(res:ServerResponse,data:any){

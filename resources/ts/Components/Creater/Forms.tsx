@@ -280,8 +280,8 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
     let [noHidden,setNext] = useContext(FormSelector);
     let [locs,setLocs] = useState([] as {name:string,id:number}[]);
     let [inLoadState,setLoad] = useState(true);
-    let [disableSubmit,setSubmitState] = useState(props.apiItem != undefined);
-
+    let [disableSubmit,setSubmitState] = useState(true);
+    let leftToBeEnable = useRef(props.apiItem ? 2 : 1);
     const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
         control,
         name: "locations", 
@@ -294,17 +294,16 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         if(!props.apiItem){
             return;
         }
-        
+        setValue('name',props.apiItem!.name);
         //make system to get value with refered foreign key
         API.location.withForeign('sender',props.apiItem.id).then(e =>{
             for(const item of e.list){
                 append({value:item.id + ''})
             }
-            //SetValue need to be the last item to be updated or is cleared
-            setTimeout(()=>{
-                setValue('name',props.apiItem!.name);
-            });
-            setSubmitState(false);
+            leftToBeEnable.current --;
+            if(leftToBeEnable.current === 0){
+                setSubmitState(false);
+            }
         })
     },[props.apiItem])
     useEffect(()=>{
@@ -312,6 +311,10 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
             setLocs(e.list.map(e =>{
                 return {name:e.name,id:e.id};
             }))
+            leftToBeEnable.current --;
+            if(leftToBeEnable.current === 0){
+                setSubmitState(false);
+            }
             setLoad(false);
         })
         API.location.on('create',onCreated);
@@ -330,7 +333,7 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
     },[])
     return (
         <BaseForm {...props} data={data} disableSubmit={disableSubmit}>
-            <InputZone title="Nome" register={register('name',{required:true})} type='text' />
+            <InputZone title="Nome" register={register('name',{required:true})} type='text' className="form-s-inp-name" />
             {fields.map((e,index) =>{
                 return (
                     <select key={e.id} {...register(`locations.${index}.value`)}>

@@ -1,10 +1,10 @@
 import { assert, describe, expect, it } from 'vitest';
-import { FormBuilder, FormSender } from '../../Components/Creater/Forms';
+import { FormSender } from '../../Components/Creater/Forms';
 import { TestWorkbanchFormEdit } from './TestsBuilders';
 import { buildApiItem } from '../../Api/Conector';
-
+import { fireEvent, getByTestId, waitFor,screen } from '@testing-library/react';
 describe("editing",()=>{
-    let apiItem = buildApiItem({id:1,name:"test"},"/api/v1/senders");
+    let apiItem = buildApiItem({id:1,name:"testSender"},"/api/v1/senders");
     
     let locations = [
         {id:1,sender_id:1,name:"test",data:{u:"http://0.0.0.0"}},
@@ -18,12 +18,22 @@ describe("editing",()=>{
     .interceptRequest('GET/api/v1/senders/1',{},true)
     //Intercept the call to get the locations from the sender
     .interceptRequest('GET/api/v1/locations?sender_id=1',locations.filter(e =>e.sender_id == 1),true);
-    
+
+    workbanch.startNew()
+    .afterRender(async ({container,user})=>{
+        let nameInp =container.getElementsByClassName('form-s-inp-name')[0];
+        await waitFor(()=>expect(getByTestId(container,'submit-btn')).toBeEnabled());
+        await user.clear(nameInp);
+        await user.type(nameInp,'moreData');
+    })
+    //FIXME case this test is the last test is returned {...ids:[1,1]} Problem not solved.
+    .testObjectSendedToServer({name:"moreData",ids:[1,2]},"(backend) changed the expected properties");
+
     workbanch.startNew()
     //check if triggers the POST to sender url
     .testRequest("Send the id from the edited element","/api/v1/senders/1");
 
     workbanch.startNew()
-    .testObjectSendedToServer({name:"test",ids:[1,2]},"(backend)Don't change unexpected properties");
-    it("correct change the property")
+    .testObjectSendedToServer({name:"testSender",ids:[1,2]},"(backend) Don't change any properties");
+
 })

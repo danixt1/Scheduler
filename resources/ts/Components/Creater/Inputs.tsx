@@ -33,10 +33,10 @@ export function BaseInput({title,children,...props}:BaseInput){
 }
 export function InputZone({title,setValue,register,...props}:InputZoneAttributes){
     let startValue = props.value || '';
-    let [value,setter] = setValue ? [startValue,setValue] : useState(startValue);
+    //let [value,setter] = setValue ? [startValue,setValue] : useState(startValue);
     return (
         <BaseInput title={title}>
-            <input {...props} {...register} value={value} onChange={(e)=>{setter(e.target.value)}}/>
+            <input {...props} {...register} />
         </BaseInput>
     )
 }

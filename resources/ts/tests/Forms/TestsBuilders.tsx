@@ -1,9 +1,12 @@
 import { afterAll, afterEach, assert, beforeAll, describe, expect, it } from 'vitest';
 import { ApiItem } from '../../Api/Api';
-import { fireEvent, getByTestId, render,screen, waitFor } from '@testing-library/react';
+import { RenderResult, fireEvent, render,screen, waitFor } from '@testing-library/react';
 import { FormBuilder } from '../../Components/Creater/Forms';
 import { createServer,IncomingMessage,ServerResponse } from 'http';
 import axios from 'axios';
+import userEvent, { UserEvent } from '@testing-library/user-event'
+
+
 //Remake the server to continue opened after the test end
 type FormElem = (props:FormBuilder<any>)=>JSX.Element;
 type ReqInfo = {path:string,value:any | any[],required:boolean};
@@ -12,7 +15,7 @@ interface EditStructure{
     apiItem:ApiItem<Record<any,any>>
     additionalRequests:ReqInfo[]
     Form:FormElem
-    afterFormRender:(baseElem:HTMLElement)=>(Promise<void> | void)
+    afterFormRender:(data:RenderResult & {user:UserEvent})=>(Promise<void> | void)
     afterIntercepts:()=>Promise<void> | void
 }
 const METHODS = ["GET","POST","DELETE","UPDATE"];
@@ -61,7 +64,9 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 let {Form: form, apiItem,additionalRequests:requests,afterFormRender,afterIntercepts} = actStr;
                 //Get Base actual request and the new requests
                 if(base){
-                    requests = [...base.additionalRequests,...requests];
+                    let upper = JSON.parse(JSON.stringify(base.additionalRequests));
+                    requests = [...upper,...requests];
+                    
                 }
                 test(testName,(testEnd)=>{
                     let finish = TestFinishEvent(afterIntercepts,testEnd);
@@ -89,12 +94,16 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 });
             },
             testAfterRender(testName:string,afterRender:()=>Promise<void> | void){
-
+                let {Form, apiItem} = actStr;
+                test(testName,(finished)=>{
+                    this.render(Form,apiItem,afterRender).finally(finished);
+                })
             },
             testRequest(testName:string,expectedPath:string){
                 let {Form: form, apiItem,afterFormRender,additionalRequests:requests,afterIntercepts} = actStr;
                 if(base){
-                    requests = [...base.additionalRequests,...requests];
+                    let upper = JSON.parse(JSON.stringify(base.additionalRequests));
+                    requests = [...upper,...requests];
                 }
                 test(testName,(testEnd)=>{
                     let finish = TestFinishEvent(afterIntercepts,testEnd);
@@ -119,21 +128,23 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 return this;
             },
             async renderAndClick(Elem:FormElem = actStr.Form,apiItem:ApiItem<Record<any, any>> =actStr.apiItem,afterRender = actStr.afterFormRender ){
-                let container =await this.render(Elem,apiItem,afterRender);
+                let data =await this.render(Elem,apiItem,afterRender);
 
                 let elem =screen.getByTestId("submit-btn");
                 expect(elem,"Submit button not found").toBeInstanceOf(HTMLInputElement);
                 await waitFor(()=>expect(elem).toBeEnabled());
                 fireEvent.click(elem);
-                return container;
+                return data;
             },
             async render(Elem:FormElem = actStr.Form,apiItem:ApiItem<Record<any, any>> =actStr.apiItem,afterRender = actStr.afterFormRender){
-                const {container}= render(<Elem apiItem={apiItem} />);
-                let res = afterRender(container);
+                const user = userEvent.setup();
+                const resRender= render(<Elem apiItem={apiItem} />);
+                const finalObj = {user,...resRender};
+                let res = afterRender(finalObj);
                 if(res instanceof Promise){
                     await res;
                 };
-                return container;
+                return finalObj;
             },
             startNew(){
                 let newObj = Object.create(actStr);
@@ -148,7 +159,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 actStr.afterIntercepts = fn;
                 return this;
             },
-            afterRender(fn:(baseElem: HTMLElement) => Promise<void> | void){
+            afterRender(fn:(data:RenderResult & {user:UserEvent}) => Promise<void> | void){
                 actStr.afterFormRender = fn;
                 return this;
             },
@@ -179,7 +190,8 @@ function RequestInteceptor(requests:ReqInfo[],onFinished:()=>void){
             }
         }
         return {
-            ...e,
+            required:e.required,
+            value:e.value,
             path,
             m:method
         }

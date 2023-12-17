@@ -2,7 +2,7 @@ import { assert, describe, expect, it } from 'vitest';
 import { FormSender } from '../../Components/Creater/Forms';
 import { TestWorkbanchFormEdit } from './TestsBuilders';
 import { buildApiItem } from '../../Api/Conector';
-import { fireEvent, getByTestId, waitFor,screen } from '@testing-library/react';
+import { fireEvent, getByTestId, waitFor,screen, prettyDOM } from '@testing-library/react';
 describe("editing",()=>{
     let apiItem = buildApiItem({id:1,name:"testSender"},"/api/v1/senders");
     
@@ -17,17 +17,10 @@ describe("editing",()=>{
     //Intercept the item refresh made after the request
     .interceptRequest('GET/api/v1/senders/1',{},true)
     //Intercept the call to get the locations from the sender
-    .interceptRequest('GET/api/v1/locations?sender_id=1',locations.filter(e =>e.sender_id == 1),true);
-
-    workbanch.startNew()
-    .afterRender(async ({container,user})=>{
-        let nameInp =container.getElementsByClassName('form-s-inp-name')[0];
-        await waitFor(()=>expect(getByTestId(container,'submit-btn')).toBeEnabled());
-        await user.clear(nameInp);
-        await user.type(nameInp,'moreData');
+    .interceptRequest('GET/api/v1/locations?sender_id=1',locations.filter(e =>e.sender_id == 1),true).
+    afterRender(async ({container})=>{
+        waitFor(()=>expect(container.getElementsByClassName('form-s-btn-local')[0]).toBeEnabled());
     })
-    //FIXME case this test is the last test is returned {...ids:[1,1]} Problem not solved.
-    .testObjectSendedToServer({name:"moreData",ids:[1,2]},"(backend) changed the expected properties");
 
     workbanch.startNew()
     //check if triggers the POST to sender url
@@ -36,4 +29,13 @@ describe("editing",()=>{
     workbanch.startNew()
     .testObjectSendedToServer({name:"testSender",ids:[1,2]},"(backend) Don't change any properties");
 
+    workbanch.startNew()
+    .afterRender(async ({container,user})=>{
+        waitFor(()=>expect(container.getElementsByClassName('form-s-btn-local')[0]).toBeEnabled());
+        let nameInp =container.getElementsByClassName('form-s-inp-name')[0];
+        await waitFor(()=>expect(getByTestId(container,'submit-btn')).toBeEnabled());
+        await user.clear(nameInp);
+        await user.type(nameInp,'moreData');
+    })
+    .testObjectSendedToServer({name:"moreData",ids:[1,2]},"(backend) changed the expected properties");
 })

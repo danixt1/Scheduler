@@ -59,28 +59,17 @@ export interface FormWithListAttrs{
 export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(val:string)=>void]);
 export const CloseWindownContext = createContext((a:boolean)=>{});
 
-export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseFormAttrs){
+export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:BaseFormAttrs){
 
     let {register,name,displayName,processing,handleSubmit,api,reset} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let item_id = apiItem ? apiItem.id : undefined;
     let [isInSubmitPhase,setSubmitPhase] = useState(false);
-    let [btnSubmitState,setBtnSubmitState] = useState(true);
-
-    useEffect(()=>{
-        if(isInSubmitPhase){
-            return;
-        }
-        if(disableSubmit != undefined){
-            setBtnSubmitState(disableSubmit);
-        }else{
-            setBtnSubmitState(false);
-        }
-    },[disableSubmit]);
+    let [btnSubmitDisable,setBtnSubmitDisable] = useState(true);
 
     props.onSubmit = handleSubmit((data)=>{
         setSubmitPhase(true);
-        setBtnSubmitState(true);
+        setBtnSubmitDisable(true);
         let result = processing(data);
         if(result instanceof Promise){
             result.then(next);
@@ -89,7 +78,7 @@ export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseForm
         }
         function next(result:any){
             api(result).
-                finally(()=>{setBtnSubmitState(false);}).
+                finally(()=>{setBtnSubmitDisable(false);}).
                 then(()=>{reset((e:any)=>{
                     let res:Record<string,any> = {};
                     for(const [varName,value] of Object.entries(e)){
@@ -110,7 +99,7 @@ export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseForm
                 type="submit" 
                 data-testid="submit-btn" 
                 value={"Salvar " + displayName} 
-                disabled={btnSubmitState}
+                disabled={btnSubmitDisable && disableSubmit}
                 className="inp-creater" />
             </div>
         </form>
@@ -297,9 +286,8 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         setValue('name',props.apiItem!.name);
         //make system to get value with refered foreign key
         API.location.withForeign('sender',props.apiItem.id).then(e =>{
-            for(const item of e.list){
-                append({value:item.id + ''})
-            }
+
+            setValue('locations',e.list.map(item =>{return {value:item.id + ''}}))
             leftToBeEnable.current --;
             if(leftToBeEnable.current === 0){
                 setSubmitState(false);
@@ -334,14 +322,21 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
     return (
         <BaseForm {...props} data={data} disableSubmit={disableSubmit}>
             <InputZone title="Nome" register={register('name',{required:true})} type='text' className="form-s-inp-name" />
-            {fields.map((e,index) =>{
-                return (
-                    <select key={e.id} {...register(`locations.${index}.value`)}>
-                        {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
-                    </select>
-                )
-            })}
-            <input type="button" value={'Adicionar local'} disabled={inLoadState} onClick={()=>{if(fields.length < 4){append({value:''})}}} />
+            <div className="cr-item-list">
+                {fields.map((e,index) =>{
+                    return (
+                        <select key={e.id} {...register(`locations.${index}.value`)}>
+                            {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
+                        </select>
+                    )
+                })}
+            </div>
+            <input 
+                className="form-s-btn-local"
+                type="button" 
+                value={'Adicionar local'} 
+                disabled={inLoadState} 
+                onClick={()=>{if(fields.length < 4){append({value:''})}}} />
         </BaseForm>
     )
 }

@@ -136,7 +136,6 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
         let item = props.apiItem;
         let date = item.date;
         let dateStr = (new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()).slice(0, -1);
-        
         defValues = {
             date:dateStr,
             eventName:item.data.name,

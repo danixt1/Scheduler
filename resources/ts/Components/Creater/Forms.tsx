@@ -145,7 +145,8 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     }
     let data = formBuilder<CreatingEvent>('event','Evento',processing,API.events.calendar,defValues);
     let [haveSenders,setHaveSender] = useState(null as null | boolean);
-    const {register} = data;
+    let [disableSubmit,setDisableSubmit] = useState(true);
+    const {register,setValue} = data;
 
     function processing(t:CreatingEvent){
         return {
@@ -161,6 +162,7 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     }
     function inPrms(request:Promise<any>){
         request.then(e =>{
+            setDisableSubmit(false);
             //Calling the message in edit mode cause render bugs
             if(!props.apiItem){
                 setHaveSender(e.list.length != 0);
@@ -177,12 +179,12 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
         }
     })
     return (
-        <BaseForm  {...props} data={data} disableSubmit = {haveSenders != null ? !haveSenders : false}>
+        <BaseForm  {...props} data={data} disableSubmit = {haveSenders != null ? !haveSenders : disableSubmit}>
             <SelectWithApiData title="Enviar para" 
                 register={register('sender_id',{required:true,valueAsNumber:true})} 
                 reqTo={API.sender}
                 inRequest={inPrms}
-                selected={props.apiItem ? props.apiItem.sender.id : undefined}
+                setDefValue={props.apiItem ? ()=>{setValue('sender_id',props.apiItem!.sender.id)} : undefined}
                 show={(e:Sender)=>{return e.name}} hidden={haveSenders != null ? !haveSenders : false} />
             <div hidden={haveSenders != null ? haveSenders : true}>
                 <b>Você ainda não possui nenhum sender registrado.</b><br/>
@@ -283,6 +285,11 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
             return;
         }
         setValue('name',props.apiItem!.name);
+    },[props.apiItem])
+    useEffect(()=>{
+        if(inLoadState || !props.apiItem){
+            return;
+        }
         //make system to get value with refered foreign key
         API.location.withForeign('sender',props.apiItem.id).then(e =>{
 
@@ -292,7 +299,7 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
                 setSubmitState(false);
             }
         })
-    },[props.apiItem])
+    },[inLoadState,props.apiItem]);
     useEffect(()=>{
         API.location().then(e =>{
             setLocs(e.list.map(e =>{

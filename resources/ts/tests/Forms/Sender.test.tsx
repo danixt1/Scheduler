@@ -2,7 +2,7 @@ import { assert, describe, expect, it } from 'vitest';
 import { FormSender } from '../../Components/Creater/Forms';
 import { TestWorkbanchFormEdit } from './TestsBuilders';
 import { buildApiItem } from '../../Api/Conector';
-import { fireEvent, getByTestId, waitFor,screen, prettyDOM } from '@testing-library/react';
+import { fireEvent, getByTestId, waitFor,screen, prettyDOM, getByText, findByText } from '@testing-library/react';
 describe("editing",()=>{
     let apiItem = buildApiItem({id:1,name:"testSender"},"/api/v1/senders");
     
@@ -29,6 +29,9 @@ describe("editing",()=>{
     workbanch.startNew()
     .testObjectSendedToServer({name:"testSender",ids:[1,2]},"(backend) Don't change any properties");
 
+    workbanch.startNew()
+    .renderWithEdit(false)
+    .testObjectSendedToServer({name:"testSender",ids:[1,2]},"(backend) Don't change any properties in pre created form");
     workbanch.startNew()
     .afterRender(async ({container,user})=>{
         waitFor(()=>expect(container.getElementsByClassName('form-s-btn-local')[0]).toBeEnabled());

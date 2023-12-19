@@ -17,7 +17,8 @@ export interface SelectZoneAttrs extends React.HTMLAttributes<HTMLSpanElement>{
     reqTo:FuncApi<any,any>
     show:(data:any)=>string | false
     inRequest?:(prms:ReturnType<FuncApi<any,any>>)=>void
-    selected?:string | number
+    /** Invoked after list finished loading to set def prop */
+    setDefValue?:()=>void
 }
 export function BaseInput({title,children,...props}:BaseInput){
     return (
@@ -40,7 +41,7 @@ export function InputZone({title,setValue,register,...props}:InputZoneAttributes
         </BaseInput>
     )
 }
-export function SelectWithApiData({reqTo,show,title,register,inRequest,selected,...attrs}:SelectZoneAttrs){
+export function SelectWithApiData({reqTo,show,title,register,inRequest,setDefValue,...attrs}:SelectZoneAttrs){
     type showItem ={id:number,name:string};
     let [inLoad,setLoadState] = useState(true);
     let [dataList,setDataList] = useState([] as showItem[]);
@@ -74,11 +75,19 @@ export function SelectWithApiData({reqTo,show,title,register,inRequest,selected,
             }
         }
     },[]);
+    useEffect(()=>{
+        if(inLoad){
+            return;
+        };
+        if(setDefValue){
+            setDefValue();
+        }
+    },[inLoad]);
     return (
         <span {...attrs}>
             <div className="cr-loading" hidden={!inLoad}>Carregando...</div>
             <BaseInput title={title} hidden={inLoad}>
-                <select {...register} value={selected != undefined ? selected : undefined}>
+                <select {...register}>
                     <option value="">---</option>
                     {
                         dataList.map((e,i) =><option key={'cr-'+reqTo.name+i} value={e.id}>{e.name}</option>)

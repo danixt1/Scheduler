@@ -138,7 +138,7 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
                 let elem =screen.getByTestId("submit-btn");
                 expect(elem,"Submit button not found").toBeInstanceOf(HTMLInputElement);
                 await waitFor(()=>expect(elem).toBeEnabled());
-                fireEvent.click(elem);
+                assert.isTrue(fireEvent.click(elem),'Failed to click in submit button');
                 return data;
             },
             async render(Elem:FormElem = actStr.Form,apiItem:ApiItem<Record<any, any>> =actStr.apiItem,afterRender = actStr.afterFormRender,renderWithEdit = actStr.renderWithEdit){

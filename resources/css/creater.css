@@ -25,6 +25,9 @@
     border: none;
     transition: background-color 0.2s;
 }
+.inp-creater:disabled{
+    background-color: white !important;
+}
 .cr-create-btn div{
     text-align: center;
     width: 100%;

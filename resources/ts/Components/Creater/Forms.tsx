@@ -66,9 +66,8 @@ export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:
     let [noHidden,setNext] = useContext(FormSelector);
     let item_id = apiItem ? apiItem.id : undefined;
     let [isInSubmitPhase,setSubmitPhase] = useState(false);
-    let [btnSubmitDisable,setBtnSubmitDisable] = useState(true);
-
-    props.onSubmit = handleSubmit((data)=>{
+    let [btnSubmitDisable,setBtnSubmitDisable] = useState(false);
+    function onValid(data:any){
         setSubmitPhase(true);
         setBtnSubmitDisable(true);
         let result = processing(data);
@@ -89,9 +88,10 @@ export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:
                 });
             });
         }
-    })
+    }
+
     return (
-        <form {...props} hidden={noHidden != name} >
+        <form {...props} hidden={noHidden != name} onSubmit={handleSubmit(onValid,(e)=>console.log(e))} >
             <h1>{item_id ? 'Editar' : 'Novo'} {' ' +displayName}</h1>
             {item_id && <input type="hidden" {...register('id',{value:item_id})}/>}
             {children}
@@ -100,7 +100,7 @@ export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:
                 type="submit" 
                 data-testid="submit-btn" 
                 value={"Salvar " + displayName} 
-                disabled={btnSubmitDisable && disableSubmit}
+                disabled={btnSubmitDisable || disableSubmit}
                 className="inp-creater" />
             </div>
         </form>
@@ -133,22 +133,25 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     let {setEvents} = useContext(CalendarEventContext);
     let close = useContext(CloseWindownContext);
     let defValues:any = undefined;
+
     if(props.apiItem){
         let item = props.apiItem;
         let date = item.date;
-        let dateStr = (new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()).slice(0, -1);
+        let dateStr = (new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()).slice(0, -8);
+        
         defValues = {
             date:dateStr,
             eventName:item.data.name,
-            eventDesc:item.data.description,
-            sender_id:item.sender.id
+            eventDesc:item.data.description
         }
     }
+    
     let data = formBuilder<CreatingEvent>('event','Evento',processing,API.events.calendar,defValues);
+
     let [haveSenders,setHaveSender] = useState(null as null | boolean);
     let [disableSubmit,setDisableSubmit] = useState(true);
     const {register,setValue} = data;
-
+    
     function processing(t:CreatingEvent){
         return {
             id:t.id,
@@ -163,11 +166,10 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     }
     function inPrms(request:Promise<any>){
         request.then(e =>{
-            setDisableSubmit(false);
-            //Calling the message in edit mode cause render bugs
             if(!props.apiItem){
                 setHaveSender(e.list.length != 0);
             }
+            setDisableSubmit(false);
         })
     }
     function updHaveSender(){
@@ -178,7 +180,7 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
         return ()=>{
             API.sender.off('create',updHaveSender);
         }
-    })
+    },[])
     return (
         <BaseForm  {...props} data={data} disableSubmit = {haveSenders != null ? !haveSenders : disableSubmit}>
             <SelectWithApiData title="Enviar para" 

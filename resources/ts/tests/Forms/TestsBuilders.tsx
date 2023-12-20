@@ -143,21 +143,25 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
             },
             async render(Elem:FormElem = actStr.Form,apiItem:ApiItem<Record<any, any>> =actStr.apiItem,afterRender = actStr.afterFormRender,renderWithEdit = actStr.renderWithEdit){
                 const user = userEvent.setup();
+                let awaiter:any = undefined;
                 function Item(){
                     let [apiItemState,setItem] = useState(renderWithEdit ? apiItem : undefined);
                     if(!renderWithEdit){
-                        useEffect(()=>{
-                            let timeout = setTimeout(()=>{
-                                setItem(apiItem);
-                            },100);
-                            return ()=>{
-                                clearTimeout(timeout);
-                            }
-                        },[]);
+                        setTimeout(()=>{
+                            awaiter();
+                            setItem(apiItem);
+                        });
                     }
                     return <Elem apiItem={apiItemState}/>
                 }
                 const resRender= render(<Item />);
+                if(!renderWithEdit){
+                    await new Promise<void>(res =>{
+                        awaiter = ()=>{
+                            res();
+                        }
+                    })
+                }
                 const finalObj = {user,...resRender};
                 let res = afterRender(finalObj);
                 if(res instanceof Promise){

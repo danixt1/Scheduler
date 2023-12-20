@@ -7,6 +7,7 @@ import { ApiItem, FuncApi } from "../../Api/Api";
 import { ItemEvCalendar, ItemLocation, ItemSender } from "../../Api/Items";
 import { LocationList, SenderList } from "../ResourceList";
 import { EditListContext } from "../ResourceList/Parts";
+import { SvgTrash } from "../../Svgs";
 //TODO fix edit system
 interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
     api:FuncApi<any,any>
@@ -266,12 +267,13 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
 
     let data = formBuilder<CreatingSender>('sender','Sender',process,API.sender);
 
-    const {register,handleSubmit,control,setValue} = data;
+    const {register,control,setValue} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let [locs,setLocs] = useState([] as {name:string,id:number}[]);
     let [inLoadState,setLoad] = useState(true);
     let [disableSubmit,setSubmitState] = useState(true);
     let leftToBeEnable = useRef(props.apiItem ? 2 : 1);
+    
     const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
         control,
         name: "locations", 
@@ -281,21 +283,19 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         return {name:data.name,ids,id:data.id}
     }
     useEffect(()=>{
-        if(!props.apiItem){
-            return;
-        }
-        setValue('name',props.apiItem!.name);
-    },[props.apiItem])
-    useEffect(()=>{
         if(inLoadState || !props.apiItem){
             return;
         }
+        setValue('name',props.apiItem!.name);
+        if(!disableSubmit){
+            setSubmitState(true);
+        }
         //make system to get value with refered foreign key
-        API.location.withForeign('sender',props.apiItem.id).then(e =>{
+        API.locSender.withForeign('sender',props.apiItem.id).then(e =>{
 
-            setValue('locations',e.list.map(item =>{return {value:item.id + ''}}))
+            setValue('locations',e.list.map(item =>{return {value:item.location.id + ''}}))
             leftToBeEnable.current --;
-            if(leftToBeEnable.current === 0){
+            if(leftToBeEnable.current <= 0){
                 setSubmitState(false);
             }
         })
@@ -306,7 +306,7 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
                 return {name:e.name,id:e.id};
             }))
             leftToBeEnable.current --;
-            if(leftToBeEnable.current === 0){
+            if(leftToBeEnable.current <= 0){
                 setSubmitState(false);
             }
             setLoad(false);
@@ -331,9 +331,12 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
             <div className="cr-item-list">
                 {fields.map((e,index) =>{
                     return (
-                        <select key={e.id} {...register(`locations.${index}.value`)}>
-                            {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
-                        </select>
+                        <span key={e.id}>
+                            <select {...register(`locations.${index}.value`)}>
+                                {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
+                            </select>
+                            <span onClick={()=>remove(index)}><SvgTrash/></span>
+                        </span>
                     )
                 })}
             </div>

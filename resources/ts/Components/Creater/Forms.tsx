@@ -229,7 +229,7 @@ function LocationRequest({...data}:{apiItem:ApiItem<ItemLocation> | undefined,su
             }
             return {
                 data:{h:heads,u:data.u,m:data.m}
-            }
+            };
         })
     },[]);
     useEffect(()=>{
@@ -283,9 +283,7 @@ export function FormLocation({...props}:FormBuilder<ItemLocation>){
         inSubmit.current = fn;
     }
     function processing(data:any){
-        data.type = 1;
-        Object.assign(data,inSubmit.current(data));
-        return data;
+        return Object.assign({type:1,name:data.name,id:data.id},inSubmit.current(data));
     }
     return (
         <BaseForm {...props} data={data}>

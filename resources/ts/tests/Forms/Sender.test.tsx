@@ -38,7 +38,7 @@ describe("editing",()=>{
 
     workbanch.startNew()
     .renderWithEdit(false)
-    .testObjectSendedToServer({name:"testSender",ids:[1,2]},"(backend) Don't change any properties in pre created form");
+    .testObjectSendedToServer({name:"testSender",ids:[1,2]},"(backend)(preRendered) Don't change any properties");
 
     workbanch.startNew()
     .afterRender(async ({container,user})=>{

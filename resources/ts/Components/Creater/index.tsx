@@ -44,7 +44,7 @@ function CreaterWindow({close,hidden}:{close:(a:boolean)=>void,hidden:boolean}){
     )
 }
 export default function Creater(){
-    const [isClosed,setCloseState] = useState(false);
+    const [isClosed,setCloseState] = useState(true);
     return (
         <span>
             <CreaterWindow close={setCloseState} hidden={isClosed}/>

@@ -58,7 +58,7 @@ export interface FormWithListAttrs{
 }
 //TODO delete this and use the PageSwitcher
 export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(val:string)=>void]);
-export const CtxAfterSuccessfulSubmit = createContext((ctx:'create' | 'edit',from:string)=>{});
+export const CtxAfterSuccessfulSubmit = createContext((ctx:'create' | 'edit',from:string)=>{return {reset:true}});
 export const CloseWindownContext = createContext((a:boolean)=>{});
 
 export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:BaseFormAttrs){
@@ -66,10 +66,15 @@ export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:
     let {register,name,displayName,processing,handleSubmit,api,reset} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let afterSubmit = useContext(CtxAfterSuccessfulSubmit);
-    let item_id = apiItem ? apiItem.id : undefined;
+    
+    let item_id = useRef(undefined as number | undefined);
+    item_id.current = apiItem ? apiItem.id : undefined
     let [isInSubmitPhase,setSubmitPhase] = useState(false);
     let [btnSubmitDisable,setBtnSubmitDisable] = useState(false);
     function onValid(data:any){
+        if(typeof item_id.current === 'number'){
+            data.id = item_id.current;
+        }
         setSubmitPhase(true);
         setBtnSubmitDisable(true);
         let result = processing(data);
@@ -82,7 +87,10 @@ export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:
             api(result)
             .finally(()=>{setBtnSubmitDisable(false);})
             .then(()=>{
-                afterSubmit(apiItem ? 'edit' : 'create',name);
+                let {reset:doReset} = afterSubmit(apiItem ? 'edit' : 'create',name);
+                if(!doReset){
+                    return;
+                }
                 reset((e:any)=>{
                     let res:Record<string,any> = {};
                     for(const [varName,value] of Object.entries(e)){
@@ -96,8 +104,7 @@ export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:
 
     return (
         <form {...props} hidden={noHidden != name} onSubmit={handleSubmit(onValid,(e)=>console.log(e))} >
-            <h1>{item_id ? 'Editar' : 'Novo'} {' ' +displayName}</h1>
-            {item_id && <input type="hidden" {...register('id',{value:item_id})}/>}
+            <h1>{typeof item_id.current === 'number' ? 'Editar' : 'Novo'} {' ' +displayName}</h1>
             {children}
             <div>
                 <input 
@@ -110,15 +117,17 @@ export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:
         </form>
     )
 }
-export function FormWithList({name,apiItem,list,form}:FormWithListAttrs){
+export function FormWithList({name,list,form}:FormWithListAttrs){
     let [noHidden,setNext] = useContext(FormSelector);
-    let [editItem,setItemToEdit]= useState( {apiItem} as  {apiItem?:ApiItem<Record<string,any>>});
+    let [editItem,setItemToEdit]= useState( {} as  {apiItem?:ApiItem<Record<string,any>>});
     return (
         <div hidden={noHidden != name}>
-            <EditListContext.Provider value={(item)=>{setItemToEdit({apiItem:item});}}>
-                {form(editItem)}
-                {list()}
-            </EditListContext.Provider>
+            <CtxAfterSuccessfulSubmit.Provider value={(mode)=>{if(mode === 'edit'){setItemToEdit({})} return {reset:true}}}>
+                <EditListContext.Provider value={(item)=>{setItemToEdit({apiItem:item});}}>
+                    {form(editItem)}
+                    {list()}
+                </EditListContext.Provider>
+            </CtxAfterSuccessfulSubmit.Provider>
 
         </div>
     )

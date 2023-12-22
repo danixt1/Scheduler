@@ -3,17 +3,19 @@ import {createServer }from "http";
 import { buildApi } from "../Api/Conector";
 import { EditListContext, ResourceList } from "../Components/ResourceList/Parts";
 import { render,screen,fireEvent } from "@testing-library/react";
+import { listenToServer } from "./Utils";
 
-const DEF_PORT = 9424;//FIXME Check server not closing in Api.test.ts
-const API_URL = "http://localhost:"+DEF_PORT;
+let DEF_PORT = 9424;
+let API_URL = "http://localhost:"+DEF_PORT;
 
 describe('ResourceList',()=>{
     let server:ReturnType<typeof createServer>;
-    beforeEach(()=>{
+    beforeEach(async()=>{
         server = createServer();
-        return new Promise<void>(res =>{
-            server.listen(DEF_PORT,res);
+        DEF_PORT = await new Promise<number>(res =>{
+            listenToServer(server,res);
         })
+        API_URL = "http://localhost:"+DEF_PORT;
     })
     afterEach(async ()=>{
         if(server.listening){

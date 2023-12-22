@@ -7,12 +7,13 @@ import axios from 'axios';
 import userEvent, { UserEvent } from '@testing-library/user-event'
 import { useEffect, useState } from 'react';
 import { act } from 'react-dom/test-utils';
+import { listenToServer } from '../Utils';
 
 
 //Remake the server to continue opened after the test end
 type FormElem = (props:FormBuilder<any>)=>JSX.Element;
 type ReqInfo = {path:string,value:any | any[],required:boolean};
-const DEF_PORT = 9543;
+let DEF_PORT = 9543;
 interface EditStructure{
     apiItem:ApiItem<Record<any,any>>
     additionalRequests:ReqInfo[]
@@ -32,11 +33,11 @@ export function TestWorkbanchFormEdit(itemApi:ApiItem<Record<any,any>>,form:Form
         console.log("Request called not inside in test:",req.method,req.url);
         jsonRes(res,renderResponseTo(req));
     };
-    beforeAll(()=>{
-        axios.defaults.baseURL = "http://localhost:"+ DEF_PORT;
-        return new Promise((res)=>{
-            server.listen(DEF_PORT,res);
+    beforeAll(async ()=>{
+        DEF_PORT = await new Promise((res)=>{
+            listenToServer(server,res);
         })
+        axios.defaults.baseURL = "http://localhost:"+ DEF_PORT;
     })
     afterEach(()=>{
         onRequest = defReq;

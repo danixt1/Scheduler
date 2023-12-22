@@ -1,7 +1,7 @@
 import { describe, expect } from "vitest";
 import { buildApiItem, buildRefProperty } from "../../Api/Conector";
 import { TestWorkbanchFormEdit } from "./TestsBuilders";
-import { FormEvent } from "../../Components/Creater/Forms";
+import { FormEvent } from "../../Components/Creater/Forms/Event";
 import { prettyDOM, waitFor } from "@testing-library/react";
 
 describe('editing',()=>{

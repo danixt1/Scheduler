@@ -1,6 +1,9 @@
-import React, { createContext, useState } from "react";
-import { CloseWindownContext, FormEvent, FormListLocation, FormListSender, FormLocation, FormSelector, FormSender } from "./Forms";
+import { useState } from "react";
 import { FormPopUp } from "../PopUp";
+import { CloseWindownContext, CtxFormSelector } from "./Ctxs";
+import { FormEvent } from "./Forms/Event";
+import { FormListLocation, FormListSender } from "../ResourceList/Lists";
+
 export interface EventData{
     id:number
     type:number
@@ -27,13 +30,13 @@ function CreaterWindow({close,hidden}:{close:(a:boolean)=>void,hidden:boolean}){
     return(
         <FormPopUp onBackClickClose={()=>{close(true)}} hidden={hidden}>
             <div className="cr-forms">
-                <FormSelector.Provider value={[actualVisible,setVisible]}>
+                <CtxFormSelector.Provider value={[actualVisible,setVisible]}>
                     <CloseWindownContext.Provider value={close}>
                         <FormListLocation/>
                         <FormListSender/>
                         <FormEvent/>
                     </CloseWindownContext.Provider>
-                </FormSelector.Provider>
+                </CtxFormSelector.Provider>
                 <div className="cr-create-btns">
                     <button {...setTrigger('sender')}>Criar Sender</button>
                     <button {...setTrigger('event')}>Criar Evento</button>

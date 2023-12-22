@@ -2,9 +2,9 @@ import {useContext, useEffect, useState} from "react"
 import { CalendarEventContext } from "../contexts";
 import { ApiItem } from "../Api/Api";
 import { FormPopUp } from "./PopUp";
-import { FormEvent } from "./Creater/Forms";
+import { FormEvent } from "./Creater/Forms/Event";
 import { SvgEdit, SvgTrash } from "../Svgs";
-//import "../../css/eventList.css"
+
 interface EventData{
     title:string
     date:Date

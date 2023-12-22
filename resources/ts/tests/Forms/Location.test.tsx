@@ -1,7 +1,7 @@
 import { describe } from "vitest";
 import { buildApiItem } from "../../Api/Conector";
 import { TestWorkbanchFormEdit } from "./TestsBuilders";
-import { FormLocation } from "../../Components/Creater/Forms";
+import { FormLocation } from "../../Components/Creater/Forms/Location";
 
 describe('editing',()=>{
     let obj = {

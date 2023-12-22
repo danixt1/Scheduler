@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { assert, describe, expect, it } from 'vitest';
-import { BaseForm, formBuilder } from '../Components/Creater/Forms';
 import { API } from '../Api';
 import { buildApiItem } from '../Api/Conector';
+import { formBuilder, BaseForm } from '../Components/Creater/Forms/Base';
 
 describe('BaseForm',()=>{
     it('pass hidden id on edit',(ctx)=>{

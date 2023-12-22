@@ -1,5 +1,5 @@
 import { assert, describe, expect, it } from 'vitest';
-import { FormSender } from '../../Components/Creater/Forms';
+import { FormSender } from '../../Components/Creater/Forms/Sender';
 import { TestWorkbanchFormEdit } from './TestsBuilders';
 import { buildApiItem, buildRefProperty } from '../../Api/Conector';
 import { fireEvent, getByTestId, waitFor,screen, prettyDOM } from '@testing-library/react';

@@ -7,12 +7,13 @@ import { ApiItem, FuncApi } from "../../Api/Api";
 import { ItemEvCalendar, ItemLocation, ItemSender } from "../../Api/Items";
 import { LocationList, SenderList } from "../ResourceList";
 import { EditListContext } from "../ResourceList/Parts";
+import { SvgTrash } from "../../Svgs";
 //TODO fix edit system
 interface FormData<FORM_INFO extends Record<string, any>> extends UseFormReturn<FORM_INFO,any,any>{
     api:FuncApi<any,any>
     name:string
     displayName:string
-    processing:(data:any)=>any
+    processing:(data:any)=>Promise<any> | any
 }
 interface Sender{
     name:string
@@ -57,48 +58,76 @@ export interface FormWithListAttrs{
 }
 //TODO delete this and use the PageSwitcher
 export let FormSelector = createContext(['event',(val:string)=>{}] as [string,(val:string)=>void]);
+export const CtxAfterSuccessfulSubmit = createContext((ctx:'create' | 'edit',from:string)=>{return {reset:true}});
 export const CloseWindownContext = createContext((a:boolean)=>{});
 
-export function BaseForm({apiItem,children,data,disableSubmit,...props}:BaseFormAttrs){
+export function BaseForm({apiItem,children,data,disableSubmit = false,...props}:BaseFormAttrs){
+
     let {register,name,displayName,processing,handleSubmit,api,reset} = data;
     let [noHidden,setNext] = useContext(FormSelector);
-    let submitRef = createRef<HTMLInputElement>();
-        let item_id = apiItem ? apiItem.id : undefined;
-        props.onSubmit = handleSubmit((data)=>{
-        let btn =submitRef.current!;
+    let afterSubmit = useContext(CtxAfterSuccessfulSubmit);
+    
+    let item_id = useRef(undefined as number | undefined);
+    item_id.current = apiItem ? apiItem.id : undefined
+    let [isInSubmitPhase,setSubmitPhase] = useState(false);
+    let [btnSubmitDisable,setBtnSubmitDisable] = useState(false);
+    function onValid(data:any){
+        if(typeof item_id.current === 'number'){
+            data.id = item_id.current;
+        }
+        setSubmitPhase(true);
+        setBtnSubmitDisable(true);
         let result = processing(data);
-        btn.disabled = true;
-        api(result).
-            finally(()=>{btn.disabled = false}).
-            then(()=>{reset((e:any)=>{
-                let res:Record<string,any> = {};
-                for(const [varName,value] of Object.entries(e)){
-                    res[varName] = Array.isArray(value) ? [] : '';
+        if(result instanceof Promise){
+            result.then(next);
+        }else{
+            next(result);
+        }
+        function next(result:any){
+            api(result)
+            .finally(()=>{setBtnSubmitDisable(false);})
+            .then(()=>{
+                let {reset:doReset} = afterSubmit(apiItem ? 'edit' : 'create',name);
+                if(!doReset){
+                    return;
                 }
-                return res;
+                reset((e:any)=>{
+                    let res:Record<string,any> = {};
+                    for(const [varName,value] of Object.entries(e)){
+                        res[varName] = Array.isArray(value) ? [] : '';
+                    }
+                    return res;
                 });
             });
-    })
-        return (
-        <form {...props} hidden={noHidden != name}>
-            <h1>{item_id ? 'Editar' : 'Novo'} {' ' +displayName}</h1>
-            {item_id && <input type="hidden" {...register('id',{value:item_id})}/>}
+        }
+    }
+
+    return (
+        <form {...props} hidden={noHidden != name} onSubmit={handleSubmit(onValid,(e)=>console.log(e))} >
+            <h1>{typeof item_id.current === 'number' ? 'Editar' : 'Novo'} {' ' +displayName}</h1>
             {children}
             <div>
-                <input type="submit" value={"Salvar " + displayName} ref={submitRef} className="inp-creater" disabled={disableSubmit} />
+                <input 
+                type="submit" 
+                data-testid="submit-btn" 
+                value={"Salvar " + displayName} 
+                disabled={btnSubmitDisable || disableSubmit}
+                className="inp-creater" />
             </div>
         </form>
     )
 }
-export function FormWithList({name,apiItem,list,form}:FormWithListAttrs){
+export function FormWithList({name,list,form}:FormWithListAttrs){
     let [noHidden,setNext] = useContext(FormSelector);
-    let [editItem,setItemToEdit]= useState( {apiItem} as  {apiItem?:ApiItem<Record<string,any>>});
+    let [editItem,setItemToEdit]= useState( {} as  {apiItem?:ApiItem<Record<string,any>>});
     return (
         <div hidden={noHidden != name}>
-            <EditListContext.Provider value={(item)=>{setItemToEdit({apiItem:item});}}>
-                {form(editItem)}
-                {list()}
-            </EditListContext.Provider>
+            <CtxAfterSuccessfulSubmit.Provider value={(mode)=>{if(mode === 'edit'){setItemToEdit({})} return {reset:true}}}>
+                <EditListContext.Provider value={(item)=>{setItemToEdit({apiItem:item});}}>
+                    {form(editItem)}
+                    {list()}
+                </EditListContext.Provider>
+            </CtxAfterSuccessfulSubmit.Provider>
 
         </div>
     )
@@ -117,23 +146,25 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     let {setEvents} = useContext(CalendarEventContext);
     let close = useContext(CloseWindownContext);
     let defValues:any = undefined;
+
     if(props.apiItem){
         let item = props.apiItem;
         let date = item.date;
-        let dateStr = (new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()).slice(0, -1);
-        console.log(dateStr);
+        let dateStr = (new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()).slice(0, -8);
         
         defValues = {
             date:dateStr,
             eventName:item.data.name,
-            eventDesc:item.data.description,
-            sender_id:item.sender.id
+            eventDesc:item.data.description
         }
     }
+    
     let data = formBuilder<CreatingEvent>('event','Evento',processing,API.events.calendar,defValues);
-    let [haveSenders,setHaveSender] = useState(null as null | boolean);
-    const {register} = data;
 
+    let [haveSenders,setHaveSender] = useState(null as null | boolean);
+    let [disableSubmit,setDisableSubmit] = useState(true);
+    const {register,setValue} = data;
+    
     function processing(t:CreatingEvent){
         return {
             id:t.id,
@@ -148,10 +179,10 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     }
     function inPrms(request:Promise<any>){
         request.then(e =>{
-            //Calling the message in edit mode cause render bugs
             if(!props.apiItem){
                 setHaveSender(e.list.length != 0);
             }
+            setDisableSubmit(false);
         })
     }
     function updHaveSender(){
@@ -162,14 +193,14 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
         return ()=>{
             API.sender.off('create',updHaveSender);
         }
-    })
+    },[])
     return (
-        <BaseForm  {...props} data={data} disableSubmit = {haveSenders != null ? !haveSenders : false}>
+        <BaseForm  {...props} data={data} disableSubmit = {haveSenders != null ? !haveSenders : disableSubmit}>
             <SelectWithApiData title="Enviar para" 
                 register={register('sender_id',{required:true,valueAsNumber:true})} 
                 reqTo={API.sender}
                 inRequest={inPrms}
-                selected={props.apiItem ? props.apiItem.sender.id : undefined}
+                setDefValue={props.apiItem ? ()=>{setValue('sender_id',props.apiItem!.sender.id)} : undefined}
                 show={(e:Sender)=>{return e.name}} hidden={haveSenders != null ? !haveSenders : false} />
             <div hidden={haveSenders != null ? haveSenders : true}>
                 <b>Você ainda não possui nenhum sender registrado.</b><br/>
@@ -182,8 +213,9 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     )
 }
 
-function LocationRequest(data:{register:UseFormRegister<any>,control:Control<any,any>,submit:(data:any)=>any}){
+function LocationRequest({...data}:{apiItem:ApiItem<ItemLocation> | undefined,submit:((data:any)=>any)} & FormData<any>){
     const register = data.register as UseFormRegister<CreatingLocationHttpRequest>;
+    const {setValue} = data;
     const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
         control:data.control,
         name: "h", 
@@ -197,9 +229,18 @@ function LocationRequest(data:{register:UseFormRegister<any>,control:Control<any
             }
             return {
                 data:{h:heads,u:data.u,m:data.m}
-            }
+            };
         })
     },[]);
+    useEffect(()=>{
+        let {apiItem} = data;
+        if(!apiItem){
+            return;
+        }
+        setValue('u',apiItem.data.u);
+        setValue('m',apiItem.data.m);
+        setValue('h',Object.keys(apiItem.data.h).map(e =>{return {name:e,value:apiItem?.data.h[e]}}));
+    },[data.apiItem])
     return (
         <>
             <InputZone title="Url" type="text" register={register('u',{required:true,pattern:/^https?:\/\//})}/>
@@ -229,56 +270,74 @@ function LocationRequest(data:{register:UseFormRegister<any>,control:Control<any
 }
 export function FormLocation({...props}:FormBuilder<ItemLocation>){
     let data = formBuilder<CreatingLocation>('location','local',processing,API.location);
-    const {register,control} = data;
+    const {register,control,setValue} = data;
     let inSubmit =useRef((data:any)=>{return data});
-
+    useEffect(()=>{
+        let {apiItem} = props;
+        if(!apiItem){
+            return;
+        };
+        setValue('name',apiItem.name);
+    },[props.apiItem])
     function putToSubmit(fn:(data:any)=>void){
         inSubmit.current = fn;
     }
     function processing(data:any){
-        data.type = 1;
-        Object.assign(data,inSubmit.current(data));
-        return data;
+        return Object.assign({type:1,name:data.name,id:data.id},inSubmit.current(data));
     }
     return (
         <BaseForm {...props} data={data}>
             <InputZone title="Nome" type="text" register={register('name',{required:true})} />
-            <LocationRequest register={register} control={control} submit={putToSubmit}/>
+            <LocationRequest {...data} submit={putToSubmit} apiItem={props.apiItem}/>
         </BaseForm>
     )
 }
 export function FormSender({...props}:FormBuilder<ItemSender>){
+
     let data = formBuilder<CreatingSender>('sender','Sender',process,API.sender);
-    //TODO Attention need to isolate the formBuilder method to refresh form data
-    const {register,handleSubmit,control,setValue} = data;
+
+    const {register,control,setValue} = data;
     let [noHidden,setNext] = useContext(FormSelector);
     let [locs,setLocs] = useState([] as {name:string,id:number}[]);
     let [inLoadState,setLoad] = useState(true);
+    let [disableSubmit,setSubmitState] = useState(true);
+    let leftToBeEnable = useRef(props.apiItem ? 2 : 1);
+    
     const { fields, append, prepend, remove, swap, move, insert } = useFieldArray({
         control,
         name: "locations", 
     });
     function process(data:CreatingSender){
         let ids = data.locations.filter(e =>e.value != '').map(e => Number.parseInt(e.value));
-        return {name:data.name,ids}
+        return {name:data.name,ids,id:data.id}
     }
     useEffect(()=>{
-        if(props.apiItem){
-            setValue('name',props.apiItem.name);
-            
-            //make system to get value with refered foreign key
-            API.location.withForeign('sender',props.apiItem.id).then(e =>{
-                for(const item of e.list){
-                    append({value:item.id + ''})
-                }
-            })
+        if(inLoadState || !props.apiItem){
+            return;
         }
-    },[props.apiItem])
+        setValue('name',props.apiItem!.name);
+        if(!disableSubmit){
+            setSubmitState(true);
+        }
+        //make system to get value with refered foreign key
+        API.locSender.withForeign('sender',props.apiItem.id).then(e =>{
+
+            setValue('locations',e.list.map(item =>{return {value:item.location.id + ''}}))
+            leftToBeEnable.current --;
+            if(leftToBeEnable.current <= 0){
+                setSubmitState(false);
+            }
+        })
+    },[inLoadState,props.apiItem]);
     useEffect(()=>{
         API.location().then(e =>{
             setLocs(e.list.map(e =>{
                 return {name:e.name,id:e.id};
             }))
+            leftToBeEnable.current --;
+            if(leftToBeEnable.current <= 0){
+                setSubmitState(false);
+            }
             setLoad(false);
         })
         API.location.on('create',onCreated);
@@ -296,16 +355,26 @@ export function FormSender({...props}:FormBuilder<ItemSender>){
         }
     },[])
     return (
-        <BaseForm data={data} {...props}>
-            <InputZone title="Nome" register={register('name',{required:true})} type={'text'} />
-            {fields.map((e,index) =>{
-                return (
-                    <select key={e.id} {...register(`locations.${index}.value`)}>
-                        {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
-                    </select>
-                )
-            })}
-            <input type="button" value={'Adicionar local'} disabled={inLoadState} onClick={()=>{if(fields.length < 4){append({value:''})}}} />
+        <BaseForm {...props} data={data} disableSubmit={disableSubmit}>
+            <InputZone title="Nome" register={register('name',{required:true})} type='text' className="form-s-inp-name" />
+            <div className="cr-item-list">
+                {fields.map((e,index) =>{
+                    return (
+                        <span key={e.id}>
+                            <select {...register(`locations.${index}.value`)}>
+                                {locs.map(t => <option value={t.id} key={e.id + ' '+t.id} >{t.name}</option>)}
+                            </select>
+                            <span onClick={()=>remove(index)}><SvgTrash/></span>
+                        </span>
+                    )
+                })}
+            </div>
+            <input 
+                className="form-s-btn-local"
+                type="button" 
+                value={'Adicionar local'} 
+                disabled={inLoadState} 
+                onClick={()=>{if(fields.length < 4){append({value:''})}}} />
         </BaseForm>
     )
 }

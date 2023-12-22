@@ -13,7 +13,12 @@ function dateOutput(prop:string){
 }
 let mainRoutes =<any>buildApi({url:BASE_URL},{
     senders:'sender',
-    locations:'location'
+    locations:'location',
+    locsenders:{
+        name:'locSender',
+        output:{},
+        ref:['location','sender']
+    }
 })
 let eventsRoutes = buildApi({url:BASE_URL},{
     'events/data':'data',

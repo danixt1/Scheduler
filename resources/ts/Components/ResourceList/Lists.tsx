@@ -2,7 +2,7 @@ import { API } from "../../Api";
 import { ResourceList } from "./Parts";
 
 export function SenderList(){
-    return <ResourceList disableEditBtn={true} api={API.sender} propsToreturn={["name"]} renamer={{name:"Nome"}}/>
+    return <ResourceList disableEditBtn={false} api={API.sender} propsToreturn={["name"]} renamer={{name:"Nome"}}/>
 }
 export function LocationList(){
     let newProps = {
@@ -13,5 +13,5 @@ export function LocationList(){
             return e.data.u
         }
     }
-    return <ResourceList disableEditBtn={true} api={API.location} propsToreturn={["name"]} renamer={{name:"Nome"}} renderProp={newProps}/>
+    return <ResourceList disableEditBtn={false} api={API.location} propsToreturn={["name"]} renamer={{name:"Nome"}} renderProp={newProps}/>
 }

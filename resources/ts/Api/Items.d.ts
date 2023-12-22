@@ -32,9 +32,19 @@ export interface ItemEvCalendar extends ItemEvData{
     get sender():ApiRef<ItemSender>
     set sender(val:number)
 }
+export interface ItemLocSender extends Item{
+    get location():ApiRef<ItemLocation>
+    set location(value:number)
+
+    get sender():ApiRef<ItemSender>
+    set sender(value:number)
+
+    isFallback:boolean
+}
 export interface ApiItems{
     sender:[ItemSender,genericEntry<ItemSender & {ids:number[]}>]
-    location:ItemLocation
+    location:ItemLocation,
+    locSender:ItemLocSender,
     events:{
         data:ItemEvData
         calendar:[ItemEvCalendar,genericEntry<Omit<ItemEvCalendar,'timer'|'event'|'sender'> & {sender_id:number}>]

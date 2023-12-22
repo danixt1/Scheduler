@@ -1,16 +1,16 @@
 import { expect, it, describe,beforeAll, assert, afterAll, afterEach } from 'vitest'
 import {createServer} from 'http';
 import { buildApi } from '../Api/Conector';
-const API_URL = 'http://localhost:9423/';
+import { listenToServer } from './Utils';
+let API_URL = 'http://localhost:9423/';
 describe('Api',()=>{
     let server = createServer((req,res)=>{actualTest(req,res)})
     let actualTest:Exclude<Parameters<typeof createServer>[1],undefined> = ()=>{}
-    beforeAll(()=>{
-        return new Promise(res =>{
-            server.listen({port:9423},()=>{
-                res();
-            });
+    beforeAll(async ()=>{
+        API_URL ='http://localhost:'+ await new Promise<number>(res =>{
+            listenToServer(server,res);
         })
+        API_URL += '/';
     });
     afterEach(()=>{
         actualTest = (req,res)=>{

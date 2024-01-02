@@ -61,7 +61,9 @@ export function FormEvent({...props}:FormBuilder<ItemEvCalendar>){
     },[])
     return (
         <BaseForm  {...props} data={data} disableSubmit = {haveSenders != null ? !haveSenders : disableSubmit}>
-            <SelectWithApiData title="Enviar para" 
+            <SelectWithApiData 
+                errName="Local De Envio"
+                title="Enviar para" 
                 register={register('sender_id',{required:true,valueAsNumber:true})} 
                 reqTo={API.sender}
                 inRequest={inPrms}

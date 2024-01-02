@@ -38,7 +38,7 @@ function LocationRequest({...data}:{apiItem:ApiItem<ItemLocation> | undefined,su
     return (
         <>
             <InputZone title="Url" type="text" register={register('u',{required:true,pattern:/^https?:\/\//})}/>
-            <BaseInput title="Método">
+            <BaseInput title="Método" name="m">
                 <select {...register('m',{required:true})} defaultValue={'GET'}>
                     <option value="GET">GET</option>
                     <option value="POST">POST</option>
@@ -46,7 +46,7 @@ function LocationRequest({...data}:{apiItem:ApiItem<ItemLocation> | undefined,su
                     <option value="UPDATE">UPDATE</option>
                 </select>
             </BaseInput>
-            <BaseInput title="Head">
+            <BaseInput title="Head" name="">
                 <div className="cr-list">
                     {fields.map((e,index)=>{
                         return (

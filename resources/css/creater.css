@@ -41,6 +41,10 @@
 .cr-data-input input{
     height: 25px;
 }
+.cr-data-msg-error{
+    margin-top: 2px;
+    color:red;
+}
 .cr-data-title{
     padding-bottom: 1px;
     font-size: large;

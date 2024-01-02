@@ -1,15 +1,21 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useContext, useEffect, useState } from "react";
 import { UseFormRegisterReturn } from "react-hook-form";
 import { ApiItem, FuncApi } from "../../Api/Api";
+import { CtxErrorsInForm } from "./Ctxs";
 
 export interface InputZoneAttributes extends React.InputHTMLAttributes<HTMLInputElement>{
     title:string
     setValue?:()=>void
     register:UseFormRegisterReturn<any>
+    /** specify the name on error in property */
+    errName?:string
 }
 export interface BaseInput extends React.HTMLAttributes<HTMLDivElement>{
     title:string
     children:ReactNode
+    name:string
+    /** specify the name on error in property */
+    errName?:string
 }
 export interface SelectZoneAttrs extends React.HTMLAttributes<HTMLSpanElement>{
     title:string
@@ -19,8 +25,36 @@ export interface SelectZoneAttrs extends React.HTMLAttributes<HTMLSpanElement>{
     inRequest?:(prms:ReturnType<FuncApi<any,any>>)=>void
     /** Invoked after list finished loading to set def prop */
     setDefValue?:()=>void
+    /** specify the name on error in property */
+    errName?:string
 }
-export function BaseInput({title,children,...props}:BaseInput){
+export function BaseInput({title,children,name,...props}:BaseInput){
+    let ctx = useContext(CtxErrorsInForm);
+    let [msgError,setMsgError] = useState('');
+    let errName = props.errName || title;
+    const msgs:any = {
+        'required':()=>`${errName} é obrigatório`,
+        'pattern':'Padrão inválido'
+    }
+    useEffect(()=>{
+        let checkTo = ctx[name];
+        if(!checkTo){
+            setMsgError('');
+            return;
+        }
+        if(!checkTo.type){
+            setMsgError('');
+            return;
+        }
+        let existErr = msgs[checkTo.type as string];
+        
+        if(!existErr){
+            console.log(checkTo);
+            setMsgError('');
+            return;
+        }
+        setMsgError(typeof existErr === 'string' ? existErr : existErr());
+    },[ctx]);
     return (
     <div className="cr-box-input" {...props}>
         <div className="cr-data-title">
@@ -29,15 +63,16 @@ export function BaseInput({title,children,...props}:BaseInput){
         <div className="cr-data-input">
             {children}
         </div>
+        <div hidden={msgError == ''} className="cr-data-msg-error">
+            {msgError}
+        </div>
     </div>
     )
 }
 export function InputZone({title,setValue,register,...props}:InputZoneAttributes){
-    let startValue = props.value || '';
-    //let [value,setter] = setValue ? [startValue,setValue] : useState(startValue);
     return (
-        <BaseInput title={title}>
-            <input {...props} {...register} />
+        <BaseInput title={title} name={register.name} errName={props.errName}>
+            <input {...props} {...register}/>
         </BaseInput>
     )
 }
@@ -86,7 +121,7 @@ export function SelectWithApiData({reqTo,show,title,register,inRequest,setDefVal
     return (
         <span {...attrs}>
             <div className="cr-loading" hidden={!inLoad}>Carregando...</div>
-            <BaseInput title={title} hidden={inLoad}>
+            <BaseInput title={title} hidden={inLoad} name={register.name} errName={attrs.errName}>
                 <select {...register}>
                     <option value="">---</option>
                     {

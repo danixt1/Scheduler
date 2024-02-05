@@ -18,6 +18,10 @@ class EventsDataController extends ApiController{
     public static function name(): string{
         return "EventsData";
     }
+    public static function toDb(array $data): array{
+        $data['data'] = CalendarEventBuilder::passToDb($data['data'],$data['type']);
+        return $data;
+    }
     protected function makeChecker(array &$data): Checker{
         $checker = new Checker($data);
         $checker->checkType('type','integer')->
@@ -29,9 +33,6 @@ class EventsDataController extends ApiController{
                 $type = $data['type'];
                 $res = CalendarEventBuilder::validate($val,$type);
                 return $res;
-            })->
-            addBuilder('data',function($val) use ($data){
-                return CalendarEventBuilder::passToDb($val,$data['type']);
             });
         return $checker;
     }

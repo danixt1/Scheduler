@@ -25,6 +25,13 @@ class CalendarEventsController extends ApiController{
     static public function name(): string{
         return "CalendarEvent";
     }
+    static function toDb(array $data): array
+    {
+        $data['date'] = (new \DateTime($data['date']))->format(DB_DATETIME_PATTERN);
+        $data['data'] = CalendarEventBuilder::passToDb($data['data'],$data['type']);
+
+        return $data; 
+    }
     protected function makeChecker(array &$data):Checker{
         $checker = new Checker($data);
         $checker->
@@ -39,10 +46,6 @@ class CalendarEventsController extends ApiController{
                 $type = $data['type'];
                 $res = CalendarEventBuilder::validate($val,$type);
                 return $res;
-            })->
-            addBuilder('date',fn($date)=>(new \DateTime($date))->format(DB_DATETIME_PATTERN))->
-            addBuilder('data',function($val) use ($data){
-                return CalendarEventBuilder::passToDb($val,$data['type']);
             });
         return $checker;
     }

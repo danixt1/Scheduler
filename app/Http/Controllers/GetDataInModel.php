@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 use App\Http\Resources\SenderResource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\JsonResource;
-
+/**
+ * Add abstract methods using default model usage
+ */
 trait GetDataInModel{
     //protected string $model;
     protected function data_all():Builder{

@@ -21,6 +21,10 @@ class TimeEventController extends ApiController{
     static public function name(): string{
         return "TimeEvent";
     }
+    public static function toDb(array $data): array{
+        $data['date'] = (new DateTime($data['date']))->format(DB_DATETIME_PATTERN);
+        return $data;
+    }
     protected function makeChecker(array &$data): Checker{
         $checker = new Checker($data);
         $checker->
@@ -34,7 +38,7 @@ class TimeEventController extends ApiController{
                 $ret['message'] = "failed parsing time string";
                 return false;
             }
-        })->addBuilder('date',fn($date)=>(new DateTime($date))->format(DB_DATETIME_PATTERN));
+        });
         return $checker;
     }
 }

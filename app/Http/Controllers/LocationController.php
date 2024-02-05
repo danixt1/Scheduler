@@ -15,6 +15,10 @@ class LocationController extends ApiController{
     static public function name(): string{
         return "Location";
     }
+    public static function toDb(array $data): array{
+        $data['data'] = LocationBuilder::passToDb($data['data'],$data['type']);
+        return $data;
+    }
     protected function makeChecker(array &$data):Checker{
         $checker = new Checker($data);
 
@@ -35,9 +39,7 @@ class LocationController extends ApiController{
                     $ret[$err[0]] = $err[1];
                 };
                 return $res;
-            })->
-            addBuilder('data',fn($val)=>LocationBuilder::passToDb($val,$data['type']));
-        
+            });
         return $checker;
     }
 }

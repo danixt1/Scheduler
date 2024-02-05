@@ -19,6 +19,9 @@ class SenderController extends ApiController{
     static public function name(): string{
         return "Sender";
     }
+    public static function toDb(array $data): array{
+        return $data;
+    }
     protected function data_update(string $id,array $dataToSet):int{
         if(isset($dataToSet['ids'])){
             DB::transaction(function() use($dataToSet,$id){

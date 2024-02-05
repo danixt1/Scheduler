@@ -21,9 +21,12 @@ class TimeEventController extends ApiController{
     static public function name(): string{
         return "TimeEvent";
     }
-    public static function toDb(array $data): array{
-        $data['date'] = (new DateTime($data['date']))->format(DB_DATETIME_PATTERN);
-        return $data;
+    public static function toDb(): DbResolver{
+        $resolver = new DbResolver;
+        $resolver->modify('date',function($date){
+            return (new DateTime($date))->format(DB_DATETIME_PATTERN);
+        });
+        return $resolver;
     }
     protected function makeChecker(array &$data): Checker{
         $checker = new Checker($data);

@@ -25,12 +25,17 @@ class CalendarEventsController extends ApiController{
     static public function name(): string{
         return "CalendarEvent";
     }
-    static function toDb(array $data): array
+    static function toDb(): DbResolver
     {
-        $data['date'] = (new \DateTime($data['date']))->format(DB_DATETIME_PATTERN);
-        $data['data'] = CalendarEventBuilder::passToDb($data['data'],$data['type']);
+        $resolver = new DbResolver;
+        $resolver->modify('date',function($date){
+            return (new \DateTime($date))->format(DB_DATETIME_PATTERN);
+        })
+        ->modify('data',function($data,$all){
+            return  CalendarEventBuilder::passToDb($data,$all['type']);
+        });
 
-        return $data; 
+        return $resolver; 
     }
     protected function makeChecker(array &$data):Checker{
         $checker = new Checker($data);

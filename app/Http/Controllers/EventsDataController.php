@@ -18,9 +18,12 @@ class EventsDataController extends ApiController{
     public static function name(): string{
         return "EventsData";
     }
-    public static function toDb(array $data): array{
-        $data['data'] = CalendarEventBuilder::passToDb($data['data'],$data['type']);
-        return $data;
+    public static function toDb(): DbResolver{
+        $resolver = new DbResolver;
+        $resolver->modify('data',function($data,$all){
+            return CalendarEventBuilder::passToDb($data,$all['type']);
+        });
+        return $resolver;
     }
     protected function makeChecker(array &$data): Checker{
         $checker = new Checker($data);

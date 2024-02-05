@@ -15,9 +15,10 @@ class LocSenderController extends ApiController{
     static public function name(): string{
         return "LocSender";
     }
-    public static function toDb(array $data): array
+    public static function toDb(): DbResolver
     {
-        return $data;
+        $resolver = new DbResolver;
+        return $resolver;
     }
     protected function makeChecker(array &$data): Checker{
         if(!isset($data['isFallback'])){

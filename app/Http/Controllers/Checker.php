@@ -18,7 +18,7 @@ class Checker{
      * @param string $prop the property to change the bas value
      * @param callable $func returned value from function is passed to db
      */
-    public function addBuilder($prop,$func){
+    public function addBuilder($prop, $func){
         $this->builders[$prop] = $func;
         return $this;
     }

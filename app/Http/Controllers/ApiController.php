@@ -31,11 +31,7 @@ abstract class ApiController extends Controller implements Icrud{
         }
     }
     abstract static public function name():string;
-    /**
-     * The final array to by passed to model in creation
-     * @param array $data filtred and validate data in api structure
-     */
-    abstract static function toDb(array $data):array;
+    abstract static function toDb():DbResolver;
     abstract protected function data_all():Builder|\Illuminate\Database\Query\Builder;
     abstract protected function data_destroy(string $item):int;
     abstract protected function data_item(string $item):null | JsonResource | array;
@@ -89,7 +85,7 @@ abstract class ApiController extends Controller implements Icrud{
         $checker = $this->makeChecker($data);
         $res =$checker->execute();
         if(!$res){
-            $passData = $this::toDb($data);
+            $passData = $this::toDb()->resolve($data);
             try{
                 $info =$this->data_create($passData);
             }catch(QueryException $e){
@@ -112,7 +108,7 @@ abstract class ApiController extends Controller implements Icrud{
         $collums = array_keys($data);
         $res = $checker->execute($collums);
         if($res == null){
-            $setData = $checker->getArray();
+            $setData = $this::toDb()->resolve($data);
             try {
                 $val =$this->data_update($item,$setData);
             } catch (QueryException $e) {

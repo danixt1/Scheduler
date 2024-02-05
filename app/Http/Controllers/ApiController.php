@@ -18,6 +18,7 @@ interface Icrud{
     function delete(string $item):Response|ResponseFactory;
     function update(Request $request,string $item):Response|ResponseFactory;
 }
+/** Base class of all Api Controllers */
 abstract class ApiController extends Controller implements Icrud{
     use ApiTrait;
     private $onGet = [];
@@ -30,10 +31,19 @@ abstract class ApiController extends Controller implements Icrud{
         }
     }
     abstract static public function name():string;
+    /**
+     * The final array to by passed to model in creation
+     * @param array $data filtred and validate data in api structure
+     */
     abstract static function toDb(array $data):array;
     abstract protected function data_all():Builder|\Illuminate\Database\Query\Builder;
     abstract protected function data_destroy(string $item):int;
     abstract protected function data_item(string $item):null | JsonResource | array;
+    /**
+     * Called after succefull validation and filtering, execute the creation in DB,
+     *  case creation process is only usign one model use `GetDataInModel` trait
+     * to auto make the fn
+     */
     abstract protected function data_create(array $data):int;
     /** Return the quantity of updated items */
     abstract protected function data_update(string $id,array $dataToSet):int;

@@ -2,7 +2,6 @@
 namespace App\Http\Controllers;
 
 class Checker{
-    use ApiTrait;
     private $checkers = [];
     private $builders = [];
     public function __construct(private array $checkIn){
@@ -63,17 +62,17 @@ class Checker{
         $ret = [];
         $result = $func($this->checkIn[$propName],$ret);
         if(!$result){
-            return $this->response_invalid_data($propName,$ret);
+            return ['invalid_data',$propName,$ret];
         };
         return null;
     }
     private function runCheckType($propName,$expected){
         if(!isset($this->checkIn[$propName])){
-            return $this->response_property_not_passed($propName);
+            return ['property_not_passed',$propName];
         };
         $typeProp = gettype($this->checkIn[$propName]);
         if($typeProp != $expected){
-            return $this->response_invalid_type($propName,$expected,$typeProp);
+            return ['invalid_type',$propName,$expected,$typeProp];
         };
         return null;
     }

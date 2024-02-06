@@ -21,6 +21,7 @@ class LocSenderController extends ApiController{
         return $resolver;
     }
     protected function makeChecker(array &$data): Checker{
+        //TODO fix that to be not needed
         if(!isset($data['isFallback'])){
             $data['isFallback'] = false;
         }

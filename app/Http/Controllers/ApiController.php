@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -99,7 +100,7 @@ abstract class ApiController extends Controller implements Icrud{
             }
             return response($info,201);
         }else{
-            return $res;
+            return $this->makeResponseFromCheckerArray($res);
         }
     }
     function update(Request $request,string $item):Response{
@@ -125,7 +126,7 @@ abstract class ApiController extends Controller implements Icrud{
             }
             return response('',204);
         }else{
-            return $res;
+            return $this->makeResponseFromCheckerArray($res);
         }
     }
     protected function setItem(){
@@ -136,5 +137,15 @@ abstract class ApiController extends Controller implements Icrud{
             $item[$key] =isset($item[$key]) ? $value($item[$key],$item):  $value($item);
         }
         return $item;
+    }
+    private function makeResponseFromCheckerArray(array $result){
+        $type = $result[0];
+        $args = array_slice($result,1);
+        $methodName = 'response_' . $type;
+        if(!$methodName){
+            throw new Exception("Unexpected error type passed By Checker class.\n
+            not exist response to error: $type");
+        }
+        return [$this,$methodName](...$args);
     }
 }

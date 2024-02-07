@@ -32,7 +32,7 @@ abstract Class ApiCase extends TestCase{
 
         $totalItemCreated = 0;
         $count = 0;
-        Log::info("TEST CREATE in $entrypoint");
+        Log::info("///////// TEST CREATE in $entrypoint /////////");
         foreach ($info as &$create) {
             $count++;
             Log::info("ITEM $count");
@@ -54,11 +54,11 @@ abstract Class ApiCase extends TestCase{
                 $totalItemCreated++;
             }
         }
-        Log::info("---------------END---------------");
         if($totalItemCreated == 0){
             throw new Error('On create phase is expected at last one item to be created, 
             to be checked if is correct added to database');
         }
+        Log::info("---------------END TEST CREATE---------------");
     }
     function test_read(){
         $this->refreshTestDatabase();
@@ -66,7 +66,7 @@ abstract Class ApiCase extends TestCase{
 
         $entrypoint = $this->apiName();
         $getters = [];
-        Log::info("TEST READ in $entrypoint");
+        Log::info("///////// TEST READ in $entrypoint /////////");
         foreach ($models as $actModel) {
             $data = $actModel;
             if($data instanceof Collection){
@@ -85,7 +85,7 @@ abstract Class ApiCase extends TestCase{
         foreach($json['data'] as $val){
            $this->assertTrue(in_array($val['id'],$getters));
         }
-        Log::info("---------------END---------------");
+        Log::info("---------------END TEST READ---------------");
 
     }
     function test_update(){
@@ -93,7 +93,7 @@ abstract Class ApiCase extends TestCase{
         $data = $this->apiUpdate();
         $model = $this->model();
         $entrypoint = $this->apiName();
-        Log::info("TEST UPDATE in $entrypoint");
+        Log::info("/////////  TEST UPDATE in $entrypoint /////////");
         foreach($data as $act){
             $model = $act['model'];
             $send = $act['send'];
@@ -101,15 +101,16 @@ abstract Class ApiCase extends TestCase{
             Log::info("ITEM $entrypoint/".$model->id);
             $resp = $this->post("/api/v1/$entrypoint/".$model->id,$send);
             $this->isExpected($resp,$expected);
-            Log::info("---------------END---------------");
+            Log::info("----END----");
         };
+        Log::info("---------------END TEST UPDATE---------------");
     }
     function test_delete(){
         $this->refreshTestDatabase();
         $entrypoint = $this->apiName();
         $model = $this->apiDelete();
         $this->delete("/api/v1/$entrypoint/".$model->id);
-        Log::info("TEST DELETE in $entrypoint/".$model->id);
+        Log::info("///////// TEST DELETE in $entrypoint/".$model->id." /////////");
         $this->assertModelMissing($model);
         Log::info("---------------END---------------");
     }

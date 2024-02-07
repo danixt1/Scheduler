@@ -96,7 +96,6 @@ abstract class ApiController extends Controller implements Icrud{
             }
             $propsToCheck = array_values($propsToCheck);//remove keys gap
         }
-        var_dump($propsToCheck);
         $res =$checker->execute($propsToCheck);
         if(!$res){
             $passData = $this::toDb()->resolve($data);

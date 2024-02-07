@@ -3,7 +3,6 @@ namespace App\Http\Controllers;
 
 class Checker{
     private $checkers = [];
-    private $builders = [];
     public function __construct(private array $checkIn){
     }
     public function checkType($propName,$expected){
@@ -12,14 +11,8 @@ class Checker{
         $this->checkers[$propName]['type'] = $expected;
         return $this;
     }
-    /**
-     * Add a function to rebuild the specified property to put in db.
-     * @param string $prop the property to change the bas value
-     * @param callable $func returned value from function is passed to db
-     */
-    public function addBuilder($prop, $func){
-        $this->builders[$prop] = $func;
-        return $this;
+    public function getProperties(){
+        return array_keys($this->checkers);
     }
     public function check($propName,$func){
         if(!isset($this->checkers[$propName]))
@@ -75,14 +68,5 @@ class Checker{
             return ['invalid_type',$propName,$expected,$typeProp];
         };
         return null;
-    }
-    public function getArray():array{
-        $passed = $this->checkIn;
-        $build = $this->builders;
-        $ret = [];
-        foreach ($passed as $key => $value) {
-           $ret[$key] = isset($build[$key]) ? $build[$key]($value) : $value;
-        };
-        return $ret;
     }
 }

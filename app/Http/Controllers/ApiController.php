@@ -25,7 +25,6 @@ abstract class ApiController extends Controller implements Icrud{
     private $onGet = [];
     private $skipBuild = False;
     protected $filterOnSend = [];
-    protected array $optional = [];
     public function __construct(private $createProps,protected $resource){
         $this->onGet = $this->setItem();
         if(count($this->onGet) == 0){
@@ -85,18 +84,7 @@ abstract class ApiController extends Controller implements Icrud{
     function create(Request $request):Response{
         $data =$this->filter($request->all());
         $checker = $this->makeChecker($data);
-        $propsToCheck = $checker->getProperties();
-        if(count($this->optional) > 0){
-            foreach($this->optional as $value){
-                if(!isset($data[$value])){
-                    $propsToCheck = array_filter($propsToCheck,function ($act) use($value){
-                        return $act != $value;
-                    });
-                }
-            }
-            $propsToCheck = array_values($propsToCheck);//remove keys gap
-        }
-        $res =$checker->execute($propsToCheck);
+        $res =$checker->execute();
         if(!$res){
             $passData = $this::toDb()->resolve($data);
             try{

@@ -8,7 +8,6 @@ use App\Models\LocSender;
 class LocSenderController extends ApiController{
     use GetDataInModel;
     protected string $model = LocSender::class;
-    protected array $optional = ['isFallback'];
     protected $filterOnSend = ['location_id','sender_id'];
     public function __construct(){
         parent::__construct(['isFallback','location_id','sender_id'],LocSenderResource::class);
@@ -27,7 +26,7 @@ class LocSenderController extends ApiController{
         $checker = new Checker($data);
         $checker->checkType('isFallback','boolean')->
             checkType('location_id','integer')->
-            checkType('sender_id','integer');
+            checkType('sender_id','integer')->optional('isFallback');
         
         return $checker;
     }

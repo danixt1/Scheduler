@@ -3,7 +3,12 @@ namespace App\Http\Controllers;
 
 class Checker{
     private $checkers = [];
+    private $nonRequired = [];
     public function __construct(private array $checkIn){
+    }
+    public function optional($prop){
+        $this->nonRequired[] = $prop;
+        return $this;
     }
     public function checkType($propName,$expected){
         if(!isset($this->checkers[$propName]))
@@ -34,6 +39,12 @@ class Checker{
             if(!isset($this->checkers[$key])){
                 continue;
             }
+            if(!isset($this->checkIn[$key])){
+                if(in_array($key,$this->nonRequired)){
+                    continue;
+                }
+                return ['property_not_passed',$key];
+            };
             $data = $this->checkers[$key];
             $type = $data['type'];
             $custom = $data['custom'];
@@ -60,9 +71,6 @@ class Checker{
         return null;
     }
     private function runCheckType($propName,$expected){
-        if(!isset($this->checkIn[$propName])){
-            return ['property_not_passed',$propName];
-        };
         $typeProp = gettype($this->checkIn[$propName]);
         if($typeProp != $expected){
             return ['invalid_type',$propName,$expected,$typeProp];

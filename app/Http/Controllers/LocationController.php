@@ -22,8 +22,8 @@ class LocationController extends ApiController{
         });
         return $resolver;
     }
-    protected function makeChecker(array &$data):Checker{
-        $checker = new Checker($data);
+    protected function makeChecker():Checker{
+        $checker = new Checker();
 
         $checker->
             checkType('name','string')->
@@ -32,7 +32,7 @@ class LocationController extends ApiController{
 
             check('name',fn ($val)=>strlen($val) > 3)->
             check('type',fn ($val)=>LocationBuilder::exist($val))->
-            check('data',function ($val,&$ret) use ($data){
+            check('data',function ($val,&$ret,$data){
                 if(!isset($data['type'])){
                     return false;
                 }

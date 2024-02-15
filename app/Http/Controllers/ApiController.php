@@ -80,11 +80,11 @@ abstract class ApiController extends Controller implements Icrud{
             Cache::put($name,$item);
         return $item;
     }
-    protected abstract function makeChecker(array &$data):Checker;
+    protected abstract function makeChecker():Checker;
     function create(Request $request):Response{
         $data =$this->filter($request->all());
-        $checker = $this->makeChecker($data);
-        $res =$checker->execute();
+        $checker = $this->makeChecker();
+        $res =$checker->execute($data);
         if(!$res){
             $passData = $this::toDb()->resolve($data);
             try{
@@ -105,9 +105,9 @@ abstract class ApiController extends Controller implements Icrud{
     }
     function update(Request $request,string $item):Response{
         $data =$this->filter($request->all());
-        $checker = $this->makeChecker($data);
+        $checker = $this->makeChecker();
         $collums = array_keys($data);
-        $res = $checker->execute($collums);
+        $res = $checker->execute($data,$collums);
         if($res == null){
             $setData = $this::toDb()->resolve($data);
             try {

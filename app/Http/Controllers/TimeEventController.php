@@ -28,8 +28,8 @@ class TimeEventController extends ApiController{
         });
         return $resolver;
     }
-    protected function makeChecker(array &$data): Checker{
-        $checker = new Checker($data);
+    protected function makeChecker(): Checker{
+        $checker = new Checker();
         $checker->
         checkType('date','string')->
         checkType('eventsdata_id','integer')->

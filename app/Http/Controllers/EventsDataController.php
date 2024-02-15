@@ -25,10 +25,10 @@ class EventsDataController extends ApiController{
         });
         return $resolver;
     }
-    protected function makeChecker(array &$data): Checker{
-        $checker = new Checker($data);
+    protected function makeChecker(): Checker{
+        $checker = new Checker();
         $checker->checkType('type','integer')->
-            checkType('data','array')->check('data',function ($val,&$ret) use ($data){
+            checkType('data','array')->check('data',function ($val,&$ret,$data){
                 if(!isset($data['type'])){
                     $ret =["message"=> '"type" property is required to update/create'];
                     return false;

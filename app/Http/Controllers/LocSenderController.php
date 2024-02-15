@@ -21,9 +21,9 @@ class LocSenderController extends ApiController{
         return $resolver;
     }
     
-    protected function makeChecker(array &$data): Checker{
+    protected function makeChecker(): Checker{
 
-        $checker = new Checker($data);
+        $checker = new Checker();
         $checker->checkType('isFallback','boolean')->
             checkType('location_id','integer')->
             checkType('sender_id','integer')->optional('isFallback');

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 class Checker{
     private $checkers = [];
     private $nonRequired = [];
-    public function __construct(private array $checkIn){
+    public function __construct(){
     }
     public function optional($prop){
         $this->nonRequired[] = $prop;
@@ -25,7 +25,7 @@ class Checker{
         $this->checkers[$propName]['custom'] = $func;
         return $this;
     }
-    public function execute($props = ['*']){
+    public function execute($test_data,$props = ['*']){
         $keys = [];
         if(count($props) == 0){
             return null;
@@ -39,7 +39,7 @@ class Checker{
             if(!isset($this->checkers[$key])){
                 continue;
             }
-            if(!isset($this->checkIn[$key])){
+            if(!isset($test_data[$key])){
                 if(in_array($key,$this->nonRequired)){
                     continue;
                 }
@@ -49,12 +49,12 @@ class Checker{
             $type = $data['type'];
             $custom = $data['custom'];
             if($type != null){
-                $ret =$this->runCheckType($key,$type);
+                $ret =$this->runCheckType($test_data,$key,$type);
                 if($ret != null)
                     return $ret;
             };
             if($custom != null){
-                $ret = $this->runCheck($key,$custom);
+                $ret = $this->runCheck($test_data,$key,$custom);
                 if($ret != null){
                     return $ret;
                 }
@@ -62,16 +62,16 @@ class Checker{
         }
         return null;
     }
-    private function runCheck($propName,$func){
+    private function runCheck($data,$propName,$func){
         $ret = [];
-        $result = $func($this->checkIn[$propName],$ret);
+        $result = $func($data[$propName],$ret,$data);
         if(!$result){
             return ['invalid_data',$propName,$ret];
         };
         return null;
     }
-    private function runCheckType($propName,$expected){
-        $typeProp = gettype($this->checkIn[$propName]);
+    private function runCheckType($data,$propName,$expected){
+        $typeProp = gettype($data[$propName]);
         if($typeProp != $expected){
             return ['invalid_type',$propName,$expected,$typeProp];
         };

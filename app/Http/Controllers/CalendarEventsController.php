@@ -37,13 +37,13 @@ class CalendarEventsController extends ApiController{
 
         return $resolver; 
     }
-    protected function makeChecker(array &$data):Checker{
-        $checker = new Checker($data);
+    protected function makeChecker():Checker{
+        $checker = new Checker();
         $checker->
             checkType('date','string')->
             checkType('data','array')->
             checkType('sender_id','integer')->
-            check('data',function ($val,&$ret) use ($data){
+            check('data',function ($val,&$ret,$data){
                 if(!isset($data['type'])){
                     $ret =["message"=> '"type" property is required to update/create'];
                     return false;

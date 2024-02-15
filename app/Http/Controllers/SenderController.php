@@ -63,8 +63,8 @@ class SenderController extends ApiController{
         }
         return $retId;
     }
-    protected function makeChecker(array &$data): Checker{
-        $checker = new Checker($data);
+    protected function makeChecker(): Checker{
+        $checker = new Checker();
         $checker->
             checkType('name','string')->
             checkType('ids','array')->

@@ -71,15 +71,6 @@ abstract class ApiController extends Controller implements Icrud{
         Cache::put($this::class.$item,$result,1);
         return response()->json($result);
     }
-    private function outputItem(array|Model &$item){
-        $name =isset($item['id']) ? $this::class.$item['id'] : null;
-        foreach ($this->filterOnSend as $value) {
-            unset($item[$value]);
-        }
-        if(!$name)
-            Cache::put($name,$item);
-        return $item;
-    }
     protected abstract function makeChecker():Checker;
     function create(Request $request):Response{
         $data =$this->filter($request->all());
@@ -90,7 +81,7 @@ abstract class ApiController extends Controller implements Icrud{
             try{
                 $info =$this->data_create($passData);
             }catch(QueryException $e){
-                if($e->getCode() === 23000){
+                if($e->getCode() === "23000"){
                     Log::info($e->getMessage());
                     return $this->response_invalid_foreign_key($e->getMessage());
                 }else{
@@ -131,12 +122,6 @@ abstract class ApiController extends Controller implements Icrud{
     }
     protected function setItem(){
         return [];
-    }
-    private function buildItem(array $item){
-        foreach ($this->onGet as $key => $value) {
-            $item[$key] =isset($item[$key]) ? $value($item[$key],$item):  $value($item);
-        }
-        return $item;
     }
     private function makeResponseFromCheckerArray(array $result){
         $type = $result[0];

@@ -20,6 +20,7 @@ trait GetDataInModel{
         if($val){
             return $this->resource ? new $this->resource($val) : $val->toArray();
         }
+        return null;
     }
     protected function data_create(array $data):int{
         $info =$this->model::create($data);

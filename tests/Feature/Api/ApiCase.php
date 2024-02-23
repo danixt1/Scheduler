@@ -21,7 +21,51 @@ abstract Class ApiCase extends TestCase{
 
     abstract function model():string;
     abstract function apiName():string;
-
+    function test_get_one(){
+        $this->refreshTestDatabase();
+        $model = $this->getOneModel($this->apiRead());
+        $entrypoint = $this->apiName();
+        $path = $entrypoint.'/'. $model->id;
+        Log::info("///////// TEST GET in ". $path ." /////////");
+        $resp = $this->get("api/v1/$path");
+        $resp->assertOk();
+        $json = $resp->json();
+        Log::info('returned json',$json);
+        Log::info("---------------END TEST GET---------------");
+    }
+    function test_get_one_not_found_case(){
+        $this->refreshTestDatabase();
+        $entrypoint = $this->apiName();
+        $path = $entrypoint.'/'. '5412512815';
+        Log::info("///////// TEST GET NOT_FOUND in ". $path ." /////////");
+        $resp = $this->get("api/v1/$path");
+        $resp->assertNotFound();
+        $json = $resp->json();
+        Log::info('returned json',$json);
+        Log::info("---------------END TEST GET NOT_FOUND---------------");
+    }
+    function test_get_one_with_cache(){
+        $this->refreshTestDatabase();
+        $model = $this->getOneModel($this->apiRead());
+        $entrypoint = $this->apiName();
+        $path = $entrypoint.'/'. $model->id;
+        Log::info("///////// TEST GET CACHED in ". $path ." /////////");
+        $resp = $this->get("api/v1/$path");
+        $cached = $this->get("api/v1/$path");
+        $resp->assertOk();
+        $cached->assertOk();
+        $this->assertEqualsCanonicalizing($resp->json(),$cached->json(),"nNot returning the same value from cache");
+        Log::info("---------------END TEST GET CACHED ---------------");
+        
+    }
+    private function getOneModel($models){
+        $first = $models[0];
+        if($first instanceof Collection){
+            return $first[0];
+        }else{
+            return $first;
+        }
+    }
     function test_create(){
         $this->refreshTestDatabase();
         $info = $this->apiCreate();

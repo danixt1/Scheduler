@@ -25,6 +25,14 @@ class TimeEventTest extends ApiCase{
                     "sender_id"=>$sender
                 ],
                 "expected"=>"CREATED"
+            ],
+            [
+                "send"=>[
+                    "date"=>"2023-12-05 13:21:42",
+                    "eventsdata_id"=>$ev,
+                    "sender_id"=>983921
+                ],
+                "expected"=>["BAD_REQUEST",["error"=>"invalid_key"]]
             ]
         ];
     }

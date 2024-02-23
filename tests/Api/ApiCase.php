@@ -1,12 +1,11 @@
 <?php
 
-namespace Tests\Feature\Api;
+namespace Tests\Api;
 
 use Error;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 

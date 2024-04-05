@@ -12,7 +12,7 @@
             <directory suffix="TestDB.php">./tests/Feature</directory>
         </testsuite>
         <testsuite name='api'>
-            <directory suffix="Test.php">./tests/Feature/Api</directory>
+            <directory suffix="Test.php">./tests/Api</directory>
         </testsuite>
     </testsuites>
     <source>

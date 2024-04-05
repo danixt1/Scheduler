@@ -4,7 +4,6 @@ namespace App\Classes;
 
 use App\Classes\CalendarEventBuilder;
 use DateTime;
-use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -14,7 +13,9 @@ INNER JOIN senders as s ON s.id = te.sender_id
 INNER JOIN eventsdatas as ed on ed.id = te.eventsdata_id 
 INNER JOIN locsenders as ls ON s.id = ls.sender_id 
 INNER JOIN locations as l ON l.id = ls.location_id';
-
+/**
+ * Responsable for the event managing, contains all dependency to trigger the event
+ */
 class TimeEvent{
     public function __construct(
         private int $id,

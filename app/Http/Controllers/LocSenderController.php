@@ -15,14 +15,18 @@ class LocSenderController extends ApiController{
     static public function name(): string{
         return "LocSender";
     }
-    protected function makeChecker(array &$data): Checker{
-        if(!isset($data['isFallback'])){
-            $data['isFallback'] = false;
-        }
-        $checker = new Checker($data);
+    public static function toDb(): DbResolver
+    {
+        $resolver = new DbResolver;
+        return $resolver;
+    }
+    
+    protected function makeChecker(): Checker{
+
+        $checker = new Checker();
         $checker->checkType('isFallback','boolean')->
             checkType('location_id','integer')->
-            checkType('sender_id','integer');
+            checkType('sender_id','integer')->optional('isFallback');
         
         return $checker;
     }

@@ -1,12 +1,11 @@
 <?php
 
-namespace Tests\Feature\Api;
+namespace Tests\Api;
 
 use Error;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -21,7 +20,51 @@ abstract Class ApiCase extends TestCase{
 
     abstract function model():string;
     abstract function apiName():string;
-
+    function test_get_one(){
+        $this->refreshTestDatabase();
+        $model = $this->getOneModel($this->apiRead());
+        $entrypoint = $this->apiName();
+        $path = $entrypoint.'/'. $model->id;
+        Log::info("///////// TEST GET in ". $path ." /////////");
+        $resp = $this->get("api/v1/$path");
+        $resp->assertOk();
+        $json = $resp->json();
+        Log::info('returned json',$json);
+        Log::info("---------------END TEST GET---------------");
+    }
+    function test_get_one_not_found_case(){
+        $this->refreshTestDatabase();
+        $entrypoint = $this->apiName();
+        $path = $entrypoint.'/'. '5412512815';
+        Log::info("///////// TEST GET NOT_FOUND in ". $path ." /////////");
+        $resp = $this->get("api/v1/$path");
+        $resp->assertNotFound();
+        $json = $resp->json();
+        Log::info('returned json',$json);
+        Log::info("---------------END TEST GET NOT_FOUND---------------");
+    }
+    function test_get_one_with_cache(){
+        $this->refreshTestDatabase();
+        $model = $this->getOneModel($this->apiRead());
+        $entrypoint = $this->apiName();
+        $path = $entrypoint.'/'. $model->id;
+        Log::info("///////// TEST GET CACHED in ". $path ." /////////");
+        $resp = $this->get("api/v1/$path");
+        $cached = $this->get("api/v1/$path");
+        $resp->assertOk();
+        $cached->assertOk();
+        $this->assertEqualsCanonicalizing($resp->json(),$cached->json(),"nNot returning the same value from cache");
+        Log::info("---------------END TEST GET CACHED ---------------");
+        
+    }
+    private function getOneModel($models){
+        $first = $models[0];
+        if($first instanceof Collection){
+            return $first[0];
+        }else{
+            return $first;
+        }
+    }
     function test_create(){
         $this->refreshTestDatabase();
         $info = $this->apiCreate();
@@ -32,7 +75,7 @@ abstract Class ApiCase extends TestCase{
 
         $totalItemCreated = 0;
         $count = 0;
-        Log::info("TEST CREATE in $entrypoint");
+        Log::info("///////// TEST CREATE in $entrypoint /////////");
         foreach ($info as &$create) {
             $count++;
             Log::info("ITEM $count");
@@ -54,11 +97,11 @@ abstract Class ApiCase extends TestCase{
                 $totalItemCreated++;
             }
         }
-        Log::info("---------------END---------------");
         if($totalItemCreated == 0){
             throw new Error('On create phase is expected at last one item to be created, 
             to be checked if is correct added to database');
         }
+        Log::info("---------------END TEST CREATE---------------");
     }
     function test_read(){
         $this->refreshTestDatabase();
@@ -66,7 +109,7 @@ abstract Class ApiCase extends TestCase{
 
         $entrypoint = $this->apiName();
         $getters = [];
-        Log::info("TEST READ in $entrypoint");
+        Log::info("///////// TEST READ in $entrypoint /////////");
         foreach ($models as $actModel) {
             $data = $actModel;
             if($data instanceof Collection){
@@ -85,7 +128,7 @@ abstract Class ApiCase extends TestCase{
         foreach($json['data'] as $val){
            $this->assertTrue(in_array($val['id'],$getters));
         }
-        Log::info("---------------END---------------");
+        Log::info("---------------END TEST READ---------------");
 
     }
     function test_update(){
@@ -93,7 +136,7 @@ abstract Class ApiCase extends TestCase{
         $data = $this->apiUpdate();
         $model = $this->model();
         $entrypoint = $this->apiName();
-        Log::info("TEST UPDATE in $entrypoint");
+        Log::info("/////////  TEST UPDATE in $entrypoint /////////");
         foreach($data as $act){
             $model = $act['model'];
             $send = $act['send'];
@@ -101,15 +144,16 @@ abstract Class ApiCase extends TestCase{
             Log::info("ITEM $entrypoint/".$model->id);
             $resp = $this->post("/api/v1/$entrypoint/".$model->id,$send);
             $this->isExpected($resp,$expected);
-            Log::info("---------------END---------------");
+            Log::info("----END----");
         };
+        Log::info("---------------END TEST UPDATE---------------");
     }
     function test_delete(){
         $this->refreshTestDatabase();
         $entrypoint = $this->apiName();
         $model = $this->apiDelete();
         $this->delete("/api/v1/$entrypoint/".$model->id);
-        Log::info("TEST DELETE in $entrypoint/".$model->id);
+        Log::info("///////// TEST DELETE in $entrypoint/".$model->id." /////////");
         $this->assertModelMissing($model);
         Log::info("---------------END---------------");
     }

@@ -1,11 +1,11 @@
 <?php
 
 namespace App\Classes;
-
+/** Contains all locations to send some determined event */
 class Sender{
     /**
      * @param \App\Classes\LocationBuilder[] $locations
-     * @param \App\Classes\LocationBuilder[] $fallbacks
+     * @param \App\Classes\LocationBuilder[] $fallbacks locations to active case one base location not is working
      */
     public function __construct(private string $name,private array $locations,private array $fallbacks = []){}
     public function sendData(array $dataToSend){

@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Api;
+namespace Tests\Api;
 
 use App\Models\Location;
 use App\Models\LocSender;
@@ -25,6 +25,13 @@ class LocSenderTest extends ApiCase{
                     "sender_id"=>$sender->id
                 ],
                 "expected"=>"CREATED"
+            ],
+            [
+                "send"=>[
+                    "location_id"=>$location->id,
+                    "sender_id"=>$sender->id
+                ],
+                "expected"=>"CREATED"
             ]
         ];
     }
@@ -37,6 +44,16 @@ class LocSenderTest extends ApiCase{
                 "model"=>$this->make(),
                 "send"=>["isFallback"=>True],
                 "expected"=>"NO_CONTENT"
+            ],
+            [
+                "model"=>$this->make(),
+                "send"=>['location_id'=>Location::factory()->create()->id],
+                "expected"=>"NO_CONTENT"
+            ],
+            [
+                "model"=>$this->make(),
+                "send"=>['location_id'=>353221],
+                "expected"=>"BAD_REQUEST"
             ]
         ];
     }

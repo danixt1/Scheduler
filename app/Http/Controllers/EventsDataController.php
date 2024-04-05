@@ -18,10 +18,17 @@ class EventsDataController extends ApiController{
     public static function name(): string{
         return "EventsData";
     }
-    protected function makeChecker(array &$data): Checker{
-        $checker = new Checker($data);
+    public static function toDb(): DbResolver{
+        $resolver = new DbResolver;
+        $resolver->modify('data',function($data,$all){
+            return CalendarEventBuilder::passToDb($data,$all['type']);
+        });
+        return $resolver;
+    }
+    protected function makeChecker(): Checker{
+        $checker = new Checker();
         $checker->checkType('type','integer')->
-            checkType('data','array')->check('data',function ($val,&$ret) use ($data){
+            checkType('data','array')->check('data',function ($val,&$ret,$data){
                 if(!isset($data['type'])){
                     $ret =["message"=> '"type" property is required to update/create'];
                     return false;
@@ -29,9 +36,6 @@ class EventsDataController extends ApiController{
                 $type = $data['type'];
                 $res = CalendarEventBuilder::validate($val,$type);
                 return $res;
-            })->
-            addBuilder('data',function($val) use ($data){
-                return CalendarEventBuilder::passToDb($val,$data['type']);
             });
         return $checker;
     }

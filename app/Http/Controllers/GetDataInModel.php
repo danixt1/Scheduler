@@ -1,10 +1,11 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Http\Resources\SenderResource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\JsonResource;
-
+/**
+ * Add abstract methods using default model usage
+ */
 trait GetDataInModel{
     //protected string $model;
     protected function data_all():Builder{
@@ -18,6 +19,7 @@ trait GetDataInModel{
         if($val){
             return $this->resource ? new $this->resource($val) : $val->toArray();
         }
+        return null;
     }
     protected function data_create(array $data):int{
         $info =$this->model::create($data);

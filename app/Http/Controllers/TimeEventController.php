@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Resources\TimeEventResource;
 use App\Models\TimeEvents;
 use DateTime;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
 
 class TimeEventController extends ApiController{
     use GetDataInModel;
@@ -21,8 +19,15 @@ class TimeEventController extends ApiController{
     static public function name(): string{
         return "TimeEvent";
     }
-    protected function makeChecker(array &$data): Checker{
-        $checker = new Checker($data);
+    public static function toDb(): DbResolver{
+        $resolver = new DbResolver;
+        $resolver->modify('date',function($date){
+            return (new DateTime($date))->format(DB_DATETIME_PATTERN);
+        });
+        return $resolver;
+    }
+    protected function makeChecker(): Checker{
+        $checker = new Checker();
         $checker->
         checkType('date','string')->
         checkType('eventsdata_id','integer')->
@@ -34,7 +39,7 @@ class TimeEventController extends ApiController{
                 $ret['message'] = "failed parsing time string";
                 return false;
             }
-        })->addBuilder('date',fn($date)=>(new DateTime($date))->format(DB_DATETIME_PATTERN));
+        });
         return $checker;
     }
 }

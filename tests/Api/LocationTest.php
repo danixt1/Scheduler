@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Api;
+namespace Tests\Api;
 
 use App\Models\Location;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +18,10 @@ class LocationTest extends ApiCase{
             [
                 "send"=>["name"=>"test","data"=>["u"=>"http://test.com"],"type"=>1],
                 "expected"=>"CREATED"
+            ],
+            [
+                "send"=>["name"=>"test","data"=>[],"type"=>1],
+                "expected"=>["BAD_REQUEST",["error"=>"invalid_data","property"=>"data"]]
             ]
         ];
     }

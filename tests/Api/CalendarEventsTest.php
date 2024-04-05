@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Api;
+namespace Tests\Api;
 
 use App\Models\EventsData;
 use App\Models\Sender;

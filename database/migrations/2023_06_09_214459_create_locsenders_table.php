@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('locsenders', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->boolean('isFallback');
+            $table->boolean('isFallback')->default(false);
             $table->foreignId('location_id')->constrained()->onDelete('cascade');
             $table->foreignId('sender_id')->constrained()->onDelete('cascade');
         });

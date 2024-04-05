@@ -25,13 +25,25 @@ class CalendarEventsController extends ApiController{
     static public function name(): string{
         return "CalendarEvent";
     }
-    protected function makeChecker(array &$data):Checker{
-        $checker = new Checker($data);
+    static function toDb(): DbResolver
+    {
+        $resolver = new DbResolver;
+        $resolver->modify('date',function($date){
+            return (new \DateTime($date))->format(DB_DATETIME_PATTERN);
+        })
+        ->modify('data',function($data,$all){
+            return  CalendarEventBuilder::passToDb($data,$all['type']);
+        });
+
+        return $resolver; 
+    }
+    protected function makeChecker():Checker{
+        $checker = new Checker();
         $checker->
             checkType('date','string')->
             checkType('data','array')->
             checkType('sender_id','integer')->
-            check('data',function ($val,&$ret) use ($data){
+            check('data',function ($val,&$ret,$data){
                 if(!isset($data['type'])){
                     $ret =["message"=> '"type" property is required to update/create'];
                     return false;
@@ -39,10 +51,6 @@ class CalendarEventsController extends ApiController{
                 $type = $data['type'];
                 $res = CalendarEventBuilder::validate($val,$type);
                 return $res;
-            })->
-            addBuilder('date',fn($date)=>(new \DateTime($date))->format(DB_DATETIME_PATTERN))->
-            addBuilder('data',function($val) use ($data){
-                return CalendarEventBuilder::passToDb($val,$data['type']);
             });
         return $checker;
     }

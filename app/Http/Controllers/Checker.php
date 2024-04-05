@@ -2,25 +2,23 @@
 namespace App\Http\Controllers;
 
 class Checker{
-    use ApiTrait;
     private $checkers = [];
-    private $builders = [];
-    public function __construct(private array $checkIn){
+    private $nonRequired = [];
+    public function __construct(){
+    }
+    public function optional($prop){
+        $this->nonRequired[] = $prop;
+        return $this;
     }
     public function checkType($propName,$expected){
-        if(!isset($this->checkers[$propName]))
+        if(!isset($this->checkers[$propName])){
             $this->checkers[$propName] = ['type'=>null,'custom'=>null];
+        }
         $this->checkers[$propName]['type'] = $expected;
         return $this;
     }
-    /**
-     * Add a function to rebuild the specified property to put in db.
-     * @param string $prop the property to change the bas value
-     * @param callable $func returned value from function is passed to db
-     */
-    public function addBuilder($prop,$func){
-        $this->builders[$prop] = $func;
-        return $this;
+    public function getProperties(){
+        return array_keys($this->checkers);
     }
     public function check($propName,$func){
         if(!isset($this->checkers[$propName]))
@@ -28,30 +26,34 @@ class Checker{
         $this->checkers[$propName]['custom'] = $func;
         return $this;
     }
-    public function execute($props = ['*']){
+    public function execute($test_data,$props = ['*']){
         $keys = [];
         if(count($props) == 0){
             return null;
         };
-        if($props[0] === '*'){
-            $keys = array_keys($this->checkers);
-        }else{
-            $keys = $props;
-        };
+        $keys =$props[0] === '*'? array_keys($this->checkers) : $props;
+
         foreach ($keys as $key) {
             if(!isset($this->checkers[$key])){
                 continue;
             }
+            if(!isset($test_data[$key])){
+                if(in_array($key,$this->nonRequired)){
+                    continue;
+                }
+                return ['property_not_passed',$key];
+            };
             $data = $this->checkers[$key];
             $type = $data['type'];
             $custom = $data['custom'];
             if($type != null){
-                $ret =$this->runCheckType($key,$type);
-                if($ret != null)
+                $ret =$this->runCheckType($test_data,$key,$type);
+                if($ret != null){
                     return $ret;
+                }
             };
             if($custom != null){
-                $ret = $this->runCheck($key,$custom);
+                $ret = $this->runCheck($test_data,$key,$custom);
                 if($ret != null){
                     return $ret;
                 }
@@ -59,31 +61,19 @@ class Checker{
         }
         return null;
     }
-    private function runCheck($propName,$func){
+    private function runCheck($data,$propName,$func){
         $ret = [];
-        $result = $func($this->checkIn[$propName],$ret);
+        $result = $func($data[$propName],$ret,$data);
         if(!$result){
-            return $this->response_invalid_data($propName,$ret);
+            return ['invalid_data',$propName,$ret];
         };
         return null;
     }
-    private function runCheckType($propName,$expected){
-        if(!isset($this->checkIn[$propName])){
-            return $this->response_property_not_passed($propName);
-        };
-        $typeProp = gettype($this->checkIn[$propName]);
+    private function runCheckType($data,$propName,$expected){
+        $typeProp = gettype($data[$propName]);
         if($typeProp != $expected){
-            return $this->response_invalid_type($propName,$expected,$typeProp);
+            return ['invalid_type',$propName,$expected,$typeProp];
         };
         return null;
-    }
-    public function getArray():array{
-        $passed = $this->checkIn;
-        $build = $this->builders;
-        $ret = [];
-        foreach ($passed as $key => $value) {
-           $ret[$key] = isset($build[$key]) ? $build[$key]($value) : $value;
-        };
-        return $ret;
     }
 }

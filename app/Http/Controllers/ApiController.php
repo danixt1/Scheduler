@@ -61,8 +61,9 @@ abstract class ApiController extends Controller implements Icrud{
     }
     function get(string $item):Response{
         $get = Cache::get($this::class.$item);
-        if($get)
+        if($get){
             return response()->json($get);
+        }
 
         $result = $this->data_item($item);
         if($result == null){
@@ -76,49 +77,48 @@ abstract class ApiController extends Controller implements Icrud{
         $data =$this->filter($request->all());
         $checker = $this->makeChecker();
         $res =$checker->execute($data);
-        if(!$res){
-            $passData = $this::toDb()->resolve($data);
-            try{
-                $info =$this->data_create($passData);
-            }catch(QueryException $e){
-                if($e->getCode() === "23000"){
-                    Log::info($e->getMessage());
-                    return $this->response_invalid_foreign_key($e->getMessage());
-                }else{
-                    Log::critical($e->getMessage());
-                }
-                return response('',500);
-            }
-            return response($info,201);
-        }else{
+
+        if($res){
             return $this->makeResponseFromCheckerArray($res);
         }
+
+        $passData = $this::toDb()->resolve($data);
+        try{
+            $info =$this->data_create($passData);
+        }catch(QueryException $e){
+            if($e->getCode() === "23000"){
+                Log::info($e->getMessage());
+                return $this->response_invalid_foreign_key($e->getMessage());
+            }
+            Log::critical($e->getMessage());
+            return response('',500);
+        }
+        return response($info,201);
     }
     function update(Request $request,string $item):Response{
         $data =$this->filter($request->all());
         $checker = $this->makeChecker();
         $collums = array_keys($data);
         $res = $checker->execute($data,$collums);
-        if($res == null){
-            $setData = $this::toDb()->resolve($data);
-            try {
-                $val =$this->data_update($item,$setData);
-            } catch (QueryException $e) {
-                if($e->getCode() === "23000"){
-                    Log::info($e->getMessage());
-                    return $this->response_invalid_foreign_key($e->getMessage());
-                }else{
-                    Log::critical($e->getMessage());
-                }
-                return response('',500);
-            }
-            if($val == 0){
-                return $this->response_not_found();
-            }
-            return response('',204);
-        }else{
+        if($res != null){
             return $this->makeResponseFromCheckerArray($res);
         }
+
+        $setData = $this::toDb()->resolve($data);
+        try {
+            $val =$this->data_update($item,$setData);
+        } catch (QueryException $e) {
+            if($e->getCode() === "23000"){
+                Log::info($e->getMessage());
+                return $this->response_invalid_foreign_key($e->getMessage());
+            }
+            Log::critical($e->getMessage());
+            return response('',500);
+        }
+        if($val == 0){
+            return $this->response_not_found();
+        }
+        return response('',204);
     }
     protected function setItem(){
         return [];

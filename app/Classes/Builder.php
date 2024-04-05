@@ -1,7 +1,6 @@
 <?php
 namespace App\Classes;
 
-use Exception;
 //TODO make new system to builder
 /**
  * Attention system remake is necessary builder is too diferent from childs, is necessary to padronize childs generated from builders

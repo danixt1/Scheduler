@@ -11,8 +11,9 @@ class Checker{
         return $this;
     }
     public function checkType($propName,$expected){
-        if(!isset($this->checkers[$propName]))
+        if(!isset($this->checkers[$propName])){
             $this->checkers[$propName] = ['type'=>null,'custom'=>null];
+        }
         $this->checkers[$propName]['type'] = $expected;
         return $this;
     }
@@ -30,11 +31,8 @@ class Checker{
         if(count($props) == 0){
             return null;
         };
-        if($props[0] === '*'){
-            $keys = array_keys($this->checkers);
-        }else{
-            $keys = $props;
-        };
+        $keys =$props[0] === '*'? array_keys($this->checkers) : $props;
+
         foreach ($keys as $key) {
             if(!isset($this->checkers[$key])){
                 continue;
@@ -50,8 +48,9 @@ class Checker{
             $custom = $data['custom'];
             if($type != null){
                 $ret =$this->runCheckType($test_data,$key,$type);
-                if($ret != null)
+                if($ret != null){
                     return $ret;
+                }
             };
             if($custom != null){
                 $ret = $this->runCheck($test_data,$key,$custom);

@@ -7,9 +7,8 @@ trait ApiTrait{
         foreach ($this->createProps as $value) {
             if(!isset($data[$value])){
                 continue;
-            }else{
-                $ret[$value] = $data[$value]; 
-            };
+            }
+            $ret[$value] = $data[$value]; 
         };
         return $ret;
     }

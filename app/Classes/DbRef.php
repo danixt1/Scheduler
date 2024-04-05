@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\DB;
 
 trait DbRef{
     protected string $tableName;

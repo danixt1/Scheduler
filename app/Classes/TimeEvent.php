@@ -4,7 +4,6 @@ namespace App\Classes;
 
 use App\Classes\CalendarEventBuilder;
 use DateTime;
-use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;

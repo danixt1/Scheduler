@@ -5,8 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Resources\TimeEventResource;
 use App\Models\TimeEvents;
 use DateTime;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\URL;
 
 class TimeEventController extends ApiController{
     use GetDataInModel;

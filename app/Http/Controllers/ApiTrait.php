@@ -12,6 +12,12 @@ trait ApiTrait{
         };
         return $ret;
     }
+    function response_multi_invalid_properties($props){
+        return response()->json([
+                'error'=>'invalid_data',
+                'properties'=>$props
+            ],400);
+    }
     function response_invalid_type($propName,$expected,$passed){
         return response()->json([
             'error'=>'invalid_data',

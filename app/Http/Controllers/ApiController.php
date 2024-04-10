@@ -98,17 +98,16 @@ abstract class ApiController extends Controller implements Icrud{
         Cache::put($this::class.$item,$result,1);
         return response()->json($result);
     }
-    protected abstract function makeChecker():Checker;
+    protected abstract function makeChecker($ctx):\Illuminate\Validation\Validator;
     function create(Request $request):Response{
-        $data =$this->filter($request->all());
-        $checker = $this->makeChecker();
-        $res =$checker->execute($data);
+        $this->userData = $request->all();
+        $this->ctx = 'create';
+        $validator = $this->makeChecker('create');
 
-        if($res){
-            return $this->makeResponseFromCheckerArray($res);
+        if($validator->fails()){
+            return $this->response_multi_invalid_properties($validator->errors()->all());
         }
-
-        $passData = $this::toDb()->resolve($data);
+        $passData = $this::toDb()->resolve($validator->validated());
         try{
             $info =$this->data_create($passData);
         }catch(QueryException $e){
@@ -122,15 +121,15 @@ abstract class ApiController extends Controller implements Icrud{
         return response($info,201);
     }
     function update(Request $request,string $item):Response{
-        $data =$this->filter($request->all());
-        $checker = $this->makeChecker();
-        $collums = array_keys($data);
-        $res = $checker->execute($data,$collums);
-        if($res != null){
-            return $this->makeResponseFromCheckerArray($res);
+        $this->userData = $request->all();
+        $this->ctx = 'update';
+        $validator = $this->makeChecker('update');
+        
+        if($validator->fails()){
+            return $this->response_multi_invalid_properties($validator->errors()->all());
         }
 
-        $setData = $this::toDb()->resolve($data);
+        $setData = $this::toDb()->resolve($validator->validated());
         try {
             $val =$this->data_update($item,$setData);
         } catch (QueryException $e) {

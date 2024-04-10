@@ -10,7 +10,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Validator;
 
 interface Icrud{
     function all(Request $request);
@@ -24,6 +24,11 @@ abstract class ApiController extends Controller implements Icrud{
     use ApiTrait;
     private $onGet = [];
     private $skipBuild = False;
+
+    private $validatorMessages = [];
+    private $userData = [];
+    /** Store the actual context being used, actually support 2 ctxs: create/update */
+    private $ctx = '';
     protected $filterOnSend = [];
     public function __construct(private $createProps,protected $resource){
         $this->onGet = $this->setItem();
@@ -44,7 +49,28 @@ abstract class ApiController extends Controller implements Icrud{
     abstract protected function data_create(array $data):int;
     /** Return the quantity of updated items */
     abstract protected function data_update(string $id,array $dataToSet):int;
-
+    /** Validator encapsulator. */
+    function validator($rules){
+        $userData = $this->beforeValidation($this->userData,$this->ctx);
+        $sendRules = [];
+        if($this->ctx == 'update'){
+            foreach($userData as $key => $value){
+                if(array_key_exists($key,$rules)){
+                    $sendRules[$key] = $rules[$key];
+                };
+            };
+        }else{
+            $sendRules = $rules;
+        }
+        return Validator::make($userData,$rules,$this->validatorMessages);
+    }
+    function changeValidationMessage($type,string $msg){
+        $this->validatorMessages[$type] = $msg;
+    }
+    /** Override this function if is necessary to sanitize the data before validation */
+    function beforeValidation($userData,string $ctx){
+        return $userData;
+    }
     function all(Request $request){
         $querys = $request->query();
         $data =$this->data_all();

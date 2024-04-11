@@ -59,7 +59,7 @@ return [
         ],
         'test'=> [
             'driver'=>'single',
-            'path' => storage_path('logs/test.log'),
+            'path' => storage_path('logs/test-temp.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],

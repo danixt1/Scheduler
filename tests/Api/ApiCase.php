@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
+use Throwable;
 
 abstract Class ApiCase extends TestCase{
     use RefreshDatabase;
-
     abstract function apiCreate():array;
     /** Return the models created in db to check if is in list */
     abstract function apiRead():array;
@@ -27,21 +27,24 @@ abstract Class ApiCase extends TestCase{
         $path = $entrypoint.'/'. $model->id;
         Log::info("///////// TEST GET in ". $path ." /////////");
         $resp = $this->get("api/v1/$path");
-        $resp->assertOk();
         $json = $resp->json();
         Log::info('returned json',$json);
+        $resp->assertOk();
         Log::info("---------------END TEST GET---------------");
     }
     function test_get_one_not_found_case(){
         $this->refreshTestDatabase();
         $entrypoint = $this->apiName();
         $path = $entrypoint.'/'. '5412512815';
-        Log::info("///////// TEST GET NOT_FOUND in ". $path ." /////////");
         $resp = $this->get("api/v1/$path");
+        $statusCode =$resp->baseResponse->getStatusCode();
+        if($statusCode != 404){
+            Log::info("///////// TEST GET NOT_FOUND in ". $path ." /////////");
+            $json = $resp->json();
+            Log::info('returned json',$json);
+            Log::info("---------------END TEST GET NOT_FOUND---------------");
+        }
         $resp->assertNotFound();
-        $json = $resp->json();
-        Log::info('returned json',$json);
-        Log::info("---------------END TEST GET NOT_FOUND---------------");
     }
     function test_get_one_with_cache(){
         $this->refreshTestDatabase();
@@ -51,9 +54,12 @@ abstract Class ApiCase extends TestCase{
         Log::info("///////// TEST GET CACHED in ". $path ." /////////");
         $resp = $this->get("api/v1/$path");
         $cached = $this->get("api/v1/$path");
+        $statusCode1 =$resp->baseResponse->getStatusCode();
+        $statusCode2 =$cached->baseResponse->getStatusCode();
+        Log::info("from db: $statusCode1, from cache:$statusCode2");
         $resp->assertOk();
         $cached->assertOk();
-        $this->assertEqualsCanonicalizing($resp->json(),$cached->json(),"nNot returning the same value from cache");
+        $this->assertEqualsCanonicalizing($resp->json(),$cached->json(),"Not returning the same value from cache");
         Log::info("---------------END TEST GET CACHED ---------------");
         
     }
@@ -141,8 +147,10 @@ abstract Class ApiCase extends TestCase{
             $model = $act['model'];
             $send = $act['send'];
             $expected = $act['expected'];
+            $sendTo = "/api/v1/$entrypoint/".$model->id;
             Log::info("ITEM $entrypoint/".$model->id);
-            $resp = $this->post("/api/v1/$entrypoint/".$model->id,$send);
+            Log::info('sended',$send);
+            $resp = $this->post($sendTo,$send);
             $this->isExpected($resp,$expected);
             Log::info("----END----");
         };
@@ -194,5 +202,26 @@ abstract Class ApiCase extends TestCase{
         if($check != null){
             $resp->assertJson($check);
         }
+    }
+    public function onNotSuccessfulTest(Throwable $e):never{
+        $tempPath = realpath('storage/logs/test-temp.log');
+        $logPath = realpath('storage/logs/test.log');
+        if(file_exists($tempPath)){
+            $file = fopen($tempPath,'r');
+            $data = fread($file,filesize($tempPath));
+            fclose($file);
+
+            $testLog = fopen($logPath,file_exists($logPath) ? 'a' : 'w');
+            fwrite($testLog,$data);
+            fclose($testLog);
+        }
+        parent::onNotSuccessfulTest($e);
+    }
+    protected function setUp(): void{
+        $tempPath = realpath('storage/logs/test-temp.log');
+        if(file_exists($tempPath)){
+            fclose(fopen($tempPath,'w'));
+        }
+        parent::setUp();
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Classes\CalendarEventBuilder;
 use App\Http\Resources\EventsDataResource;
 use App\Models\EventsData;
+use Illuminate\Validation\Validator;
 
 class EventsDataController extends ApiController{
     use GetDataInModel;
@@ -25,18 +26,23 @@ class EventsDataController extends ApiController{
         });
         return $resolver;
     }
-    protected function makeChecker(): Checker{
-        $checker = new Checker();
-        $checker->checkType('type','integer')->
-            checkType('data','array')->check('data',function ($val,&$ret,$data){
-                if(!isset($data['type'])){
-                    $ret =["message"=> '"type" property is required to update/create'];
-                    return false;
-                };
-                $type = $data['type'];
-                $res = CalendarEventBuilder::validate($val,$type);
-                return $res;
-            });
-        return $checker;
+    protected function makeChecker($ctx): Validator{
+        $rules = [
+            'type'=>'required|numeric|integer|between:1,1',
+            'data'=>'required|array'
+        ];
+        $type1 = [
+            'data.name'=>'required|string',
+            'data.description'=>'string'
+        ];
+        $validator = $this->validator($rules)->
+        after(function (Validator $validator) use($ctx){
+            $data = $validator->getData();
+            if($ctx === 'update' && !isset($data['type'])){
+                $validator->errors()->add('type','type is always required in update');
+            }
+        });
+        $validator->addRules($type1);
+        return $validator;
     }
 }

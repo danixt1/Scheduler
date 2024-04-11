@@ -6,16 +6,14 @@ use App\Classes\CalendarEventBuilder;
 use App\Http\Resources\CalendarEventsResource;
 use App\Models\EventsData;
 use App\Models\TimeEvents;
-use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\URL;
-use Symfony\Component\HttpFoundation\Response;
-
+use Illuminate\Validation\Validator;
+/**
+ * CalendarEvents is a join of table `timeevents` and `eventsdata`
+ */
 class CalendarEventsController extends ApiController{
     protected $filterOnSend = ['sender_id','eventsdata_id'];
     protected $props = ['timeevents.id','date','eventsdata_id','sender_id','type','data'];
@@ -37,22 +35,26 @@ class CalendarEventsController extends ApiController{
 
         return $resolver; 
     }
-    protected function makeChecker():Checker{
-        $checker = new Checker();
-        $checker->
-            checkType('date','string')->
-            checkType('data','array')->
-            checkType('sender_id','integer')->
-            check('data',function ($val,&$ret,$data){
-                if(!isset($data['type'])){
-                    $ret =["message"=> '"type" property is required to update/create'];
-                    return false;
-                };
-                $type = $data['type'];
-                $res = CalendarEventBuilder::validate($val,$type);
-                return $res;
-            });
-        return $checker;
+    protected function makeChecker($ctx): Validator{
+        $rules = [
+            'date'=>'required|date',
+            'data'=>'required|array',
+            'sender_id'=>'required|integer|numeric',
+            'type'=>'required|integer|numeric|between:1,1'
+        ];
+        $type1 = [
+            'data.name'=>'required|string',
+            'data.description'=>'string'
+        ];
+        $validator = $this->validator($rules)->
+        after(function (Validator $validator) use ($ctx){
+            $data = $validator->getData();
+            if($ctx == 'update' && !isset($data['type'])){
+                $validator->errors()->add('type','type is always required in update');
+            }
+        });
+        $validator->addRules($type1);
+        return $validator;
     }
     protected function data_all(): Builder|QueryBuilder{
         $data =  DB::table('timeevents')->

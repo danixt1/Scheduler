@@ -28,20 +28,20 @@ $makeRoutes = function(array $cruds,string $version){
         $class = $crud[1];
         Route::prefix($version.'/'.$crud[0])->middleware("cache.headers:private;max_age=5")->group(function() use ($class){
             Route::get('/',[$class,'all'])->name($class::name());
-            Route::post('/',[$class,'create'])->name($class::name().'.create');;
+            Route::post('/',[$class,'create'])->name($class::name().'.create');
             
             Route::post('/{item}',[$class,'update'])->name($class::name().'.update');
-            Route::get('/{item}',[$class,'get'])->name($class::name().'.show');;
+            Route::get('/{item}',[$class,'get'])->name($class::name().'.show');
             Route::delete('/{item}',[$class,'delete'])->name($class::name().'.delete');
         });
     };
 };
 $crudsV1 = [
-    //['events/calendar',CalendarEventsController::class],
-    //['events/data',EventsDataController::class],
-    //['events/timers',TimeEventController::class],
+    ['events/calendar',CalendarEventsController::class],
+    ['events/data',EventsDataController::class],
+    ['events/timers',TimeEventController::class],
     ['senders',SenderController::class],
     ['locations',LocationController::class],
-    //['locsenders',LocSenderController::class]
+    ['locsenders',LocSenderController::class]
 ];
 $makeRoutes($crudsV1,'v1');

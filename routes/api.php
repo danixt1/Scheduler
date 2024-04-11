@@ -37,11 +37,11 @@ $makeRoutes = function(array $cruds,string $version){
     };
 };
 $crudsV1 = [
-    ['events/calendar',CalendarEventsController::class],
-    ['events/data',EventsDataController::class],
-    ['events/timers',TimeEventController::class],
+    //['events/calendar',CalendarEventsController::class],
+    //['events/data',EventsDataController::class],
+    //['events/timers',TimeEventController::class],
     ['senders',SenderController::class],
     ['locations',LocationController::class],
-    ['locsenders',LocSenderController::class]
+    //['locsenders',LocSenderController::class]
 ];
 $makeRoutes($crudsV1,'v1');

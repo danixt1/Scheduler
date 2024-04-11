@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Classes\LocationBuilder;
 use App\Http\Resources\LocationResource;
 use App\Models\Location;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class LocationController extends ApiController{
     use GetDataInModel;
@@ -22,27 +24,34 @@ class LocationController extends ApiController{
         });
         return $resolver;
     }
-    protected function makeChecker():Checker{
-        $checker = new Checker();
-
-        $checker->
-            checkType('name','string')->
-            checkType('data','array')->
-            checkType('type','integer')->
-
-            check('name',fn ($val)=>strlen($val) > 3)->
-            check('type',fn ($val)=>LocationBuilder::exist($val))->
-            check('data',function ($val,&$ret,$data){
+    protected function makeChecker($ctx): Validator{
+        $rules = [
+            'name'=>'required|string|min:3',
+            'data'=>'required|array',
+            'type'=>'required|integer|numeric|between:1,1'
+        ];
+        $validator = $this->validator($rules);
+        $data = $validator->getData();
+        if(!isset($data['type']) || !is_integer($data['type']) || $data['type'] > 1){
+            return $validator;
+        }
+        if($data['type'] == 1){
+            $validator->addRules([
+                'data.u'=>'required|url:http,https',
+                'data.m'=>[Rule::in(['GET','POST','DELETE','UPDATE'])],
+                'data.h'=>'array',
+                'data.d'=>[Rule::in(['default','header','query','json'])]
+            ]);
+        }
+        $validator->after(function (Validator $validator) use ($ctx){
+            $data = $validator->getData();
+            if($ctx == 'update'){
                 if(!isset($data['type'])){
-                    return false;
+                    $validator->errors()->add('type','type is always required in update');
+                    return;
                 }
-                $err = [];
-                $res = LocationBuilder::validate($val,$data['type'],$err);
-                if(!$res){
-                    $ret[$err[0]] = $err[1];
-                };
-                return $res;
-            });
-        return $checker;
+            };
+        });
+        return $validator;
     }
 }

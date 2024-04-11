@@ -68,7 +68,7 @@ abstract class ApiController extends Controller implements Icrud{
         $this->validatorMessages[$type] = $msg;
     }
     /** Override this function if is necessary to sanitize the data before validation */
-    function beforeValidation($userData,string $ctx){
+    protected function beforeValidation($userData,string $ctx){
         return $userData;
     }
     function all(Request $request){

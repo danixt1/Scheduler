@@ -102,6 +102,7 @@ abstract Class ApiCase extends TestCase{
                 $this->assertDatabaseHas($tableName,$inDb);
                 $totalItemCreated++;
             }
+            Log::info("----SUCCESS----");
         }
         if($totalItemCreated == 0){
             throw new Error('On create phase is expected at last one item to be created, 
@@ -151,8 +152,9 @@ abstract Class ApiCase extends TestCase{
             Log::info("ITEM $entrypoint/".$model->id);
             Log::info('sended',$send);
             $resp = $this->post($sendTo,$send);
+            Log::info('returned status code:'.$resp->baseResponse->getStatusCode());
             $this->isExpected($resp,$expected);
-            Log::info("----END----");
+            Log::info("----SUCCESS----");
         };
         Log::info("---------------END TEST UPDATE---------------");
     }

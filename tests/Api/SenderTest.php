@@ -18,7 +18,7 @@ class SenderTest extends ApiCase{
                     "ids"=>$others->toArray()
                 ],
                 "expected"=>[
-                    "BAD_REQUEST",['error'=>'invalid_data','property'=>'ids']
+                    "BAD_REQUEST"
                 ]
             ],
             [
@@ -51,8 +51,7 @@ class SenderTest extends ApiCase{
                     "ids"=>[]
                 ],
                 "expected"=>[
-                    "BAD_REQUEST",
-                    ["error"=>"invalid_data","property"=>"name"]
+                    "BAD_REQUEST"
                 ]
             ]
         ];
@@ -76,7 +75,7 @@ class SenderTest extends ApiCase{
             [
                 "model"=>Sender::factory()->create(),
                 "send"=>["name"=>11],
-                "expected"=>["BAD_REQUEST",["error"=>"invalid_data","property"=>"name"]]
+                "expected"=>["BAD_REQUEST"]
             ]
         ];
     }

@@ -27,6 +27,15 @@ class CalendarEventsTest extends ApiCase{
                 ],
                 "expected"=>["CREATED"],
                 "inDb"=>["type"=>1,"data"=>'["test","first test"]']
+            ],
+            [
+                "send"=>[
+                    "data"=>["name"=>"test","description"=>"first test"],
+                    "date"=>"2023-12-05 13:21:42",
+                    "sender_id"=>"invalid_id",
+                    "type"=>1
+                ],
+                "expected"=>["BAD_REQUEST"]
             ]
         ];
     }
@@ -51,6 +60,11 @@ class CalendarEventsTest extends ApiCase{
                 "model"=>$data,
                 "send"=>["date"=>"2021-12-05 12:21:42"],
                 "expected"=>"NO_CONTENT"
+            ],
+            [
+                "model"=>$data,
+                "send"=>["date"=>"not as valid date"],
+                "expected"=>"BAD_REQUEST"
             ],
             [
                 "model"=>$data2,

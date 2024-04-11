@@ -62,7 +62,7 @@ abstract class ApiController extends Controller implements Icrud{
         }else{
             $sendRules = $rules;
         }
-        return Validator::make($userData,$rules,$this->validatorMessages);
+        return Validator::make($userData,$sendRules,$this->validatorMessages);
     }
     function changeValidationMessage($type,string $msg){
         $this->validatorMessages[$type] = $msg;

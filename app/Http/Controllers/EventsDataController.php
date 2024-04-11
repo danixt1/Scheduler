@@ -33,16 +33,21 @@ class EventsDataController extends ApiController{
         ];
         $type1 = [
             'data.name'=>'required|string',
-            'data.description'=>'string'
+            'data.description'=>'string|nullable'
         ];
         $validator = $this->validator($rules)->
         after(function (Validator $validator) use($ctx){
             $data = $validator->getData();
-            if($ctx === 'update' && !isset($data['type'])){
+            if($ctx === 'update' && !isset($data['type']) && isset($data['data'])){
                 $validator->errors()->add('type','type is always required in update');
             }
         });
-        $validator->addRules($type1);
+        if($ctx == 'update'){
+            $data = $validator->getData();
+            if(isset($data['data'])){
+                $validator->addRules($type1);
+            }
+        }
         return $validator;
     }
 }

@@ -30,6 +30,15 @@ class CalendarEventsTest extends ApiCase{
             ],
             [
                 "send"=>[
+                    "data"=>["name"=>1,"description"=>"first test"],
+                    "date"=>"2023-12-05 13:21:42",
+                    "sender_id"=>$sender->id,
+                    "type"=>1
+                ],
+                "expected"=>["BAD_REQUEST"],
+            ],
+            [
+                "send"=>[
                     "data"=>["name"=>"test","description"=>"first test"],
                     "date"=>"2023-12-05 13:21:42",
                     "sender_id"=>"invalid_id",

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Classes\CalendarEventBuilder;
+use App\Http\DataType\DataTypeResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,7 +23,7 @@ class CalendarEventsResource extends JsonResource
             'timer'=>route("TimeEvent.show",["item"=>$this->id]),
             'event'=>route("EventsData.show",["item"=>$this->eventsdata_id]),
             'sender'=>route("Sender.show",["item"=>$this->sender_id]),
-            'data'=>CalendarEventBuilder::create(json_decode($this->data),$this->type)->getData()
+            'data'=>DataTypeResource::get('calendarEvent',$this->type,$this->data) //CalendarEventBuilder::create(json_decode($this->data),$this->type)->getData()
         ];
     }
 }

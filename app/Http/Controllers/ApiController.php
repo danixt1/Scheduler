@@ -10,7 +10,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Validator;
 
 interface Icrud{
     function all(Request $request);
@@ -24,6 +24,11 @@ abstract class ApiController extends Controller implements Icrud{
     use ApiTrait;
     private $onGet = [];
     private $skipBuild = False;
+
+    private $validatorMessages = [];
+    private $userData = [];
+    /** Store the actual context being used, actually support 2 ctxs: create/update */
+    private $ctx = '';
     protected $filterOnSend = [];
     public function __construct(private $createProps,protected $resource){
         $this->onGet = $this->setItem();
@@ -44,7 +49,28 @@ abstract class ApiController extends Controller implements Icrud{
     abstract protected function data_create(array $data):int;
     /** Return the quantity of updated items */
     abstract protected function data_update(string $id,array $dataToSet):int;
-
+    /** Validator encapsulator. */
+    function validator($rules){
+        $userData = $this->beforeValidation($this->userData,$this->ctx);
+        $sendRules = [];
+        if($this->ctx == 'update'){
+            foreach($userData as $key => $value){
+                if(array_key_exists($key,$rules)){
+                    $sendRules[$key] = $rules[$key];
+                };
+            };
+        }else{
+            $sendRules = $rules;
+        }
+        return Validator::make($userData,$sendRules,$this->validatorMessages);
+    }
+    function changeValidationMessage($type,string $msg){
+        $this->validatorMessages[$type] = $msg;
+    }
+    /** Override this function if is necessary to sanitize the data before validation */
+    protected function beforeValidation($userData,string $ctx){
+        return $userData;
+    }
     function all(Request $request){
         $querys = $request->query();
         $data =$this->data_all();
@@ -72,17 +98,16 @@ abstract class ApiController extends Controller implements Icrud{
         Cache::put($this::class.$item,$result,1);
         return response()->json($result);
     }
-    protected abstract function makeChecker():Checker;
+    protected abstract function makeChecker($ctx):\Illuminate\Validation\Validator;
     function create(Request $request):Response{
-        $data =$this->filter($request->all());
-        $checker = $this->makeChecker();
-        $res =$checker->execute($data);
+        $this->userData = $request->all();
+        $this->ctx = 'create';
+        $validator = $this->makeChecker('create');
 
-        if($res){
-            return $this->makeResponseFromCheckerArray($res);
+        if($validator->fails()){
+            return $this->response_multi_invalid_properties($validator->errors()->all());
         }
-
-        $passData = $this::toDb()->resolve($data);
+        $passData = $this::toDb()->resolve($validator->validated());
         try{
             $info =$this->data_create($passData);
         }catch(QueryException $e){
@@ -96,15 +121,15 @@ abstract class ApiController extends Controller implements Icrud{
         return response($info,201);
     }
     function update(Request $request,string $item):Response{
-        $data =$this->filter($request->all());
-        $checker = $this->makeChecker();
-        $collums = array_keys($data);
-        $res = $checker->execute($data,$collums);
-        if($res != null){
-            return $this->makeResponseFromCheckerArray($res);
+        $this->userData = $request->all();
+        $this->ctx = 'update';
+        $validator = $this->makeChecker('update');
+        
+        if($validator->fails()){
+            return $this->response_multi_invalid_properties($validator->errors()->all());
         }
 
-        $setData = $this::toDb()->resolve($data);
+        $setData = $this::toDb()->resolve($validator->validated());
         try {
             $val =$this->data_update($item,$setData);
         } catch (QueryException $e) {

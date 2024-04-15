@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\TimeEventResource;
 use App\Models\TimeEvents;
 use DateTime;
+use Illuminate\Validation\Validator;
 
 class TimeEventController extends ApiController{
     use GetDataInModel;
@@ -26,20 +27,13 @@ class TimeEventController extends ApiController{
         });
         return $resolver;
     }
-    protected function makeChecker(): Checker{
-        $checker = new Checker();
-        $checker->
-        checkType('date','string')->
-        checkType('eventsdata_id','integer')->
-        checkType('sender_id','integer')->check("date",function ($prop,&$ret){
-            try {
-                new DateTime($prop);
-                return true;
-            } catch (\Throwable $th) {
-                $ret['message'] = "failed parsing time string";
-                return false;
-            }
-        });
-        return $checker;
+
+    protected function makeChecker($ctx): Validator{
+        $rules = [
+            'date'=>'required|date',
+            'eventsdata_id'=>'required|integer|numeric',
+            'sender_id'=>'required|integer|numeric'
+        ];
+        return $this->validator($rules);
     }
 }

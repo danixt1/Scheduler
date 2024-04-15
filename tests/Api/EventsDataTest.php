@@ -20,6 +20,10 @@ class EventsDataTest extends ApiCase{
                 "inDb"=>["type"=>1,"data"=>'["test","simple test"]']
             ],
             [
+                "send"=>["type"=>1,"data"=>["name"=>24521,"description"=>"simple test"]],
+                "expected"=>["BAD_REQUEST"],
+            ],
+            [
                 "send"=>["type"=>1,"data"=>["name"=>"test2","description"=>null]],
                 "expected"=>"CREATED",
                 "inDb"=>["type"=>1,"data"=>'["test2",""]']

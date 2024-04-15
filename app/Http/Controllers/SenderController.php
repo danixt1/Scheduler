@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\SenderResource;
 use App\Models\Sender;
+use Closure;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Validator;
 
 //TODO definir padrão para retornar um model no data_all e passar o senderResource na coleção
 class SenderController extends ApiController{
@@ -60,46 +62,27 @@ class SenderController extends ApiController{
         }
         return $retId;
     }
-    protected function makeChecker(): Checker{
-        $checker = new Checker();
-        $checker->
-            checkType('name','string')->
-            checkType('ids','array')->
-            check('name',function($val){
-                return strlen($val) > 2;
-            })->
-            check('ids',function($val,&$ret){
-                $len = count($val);
-                if($len == 0){
-                    return true;
-                };
-                if($len > 4){
-                    $ret = [
-                        'message'=>'Limit of locations reachead to sender',
-                        'error'=>'max_ids_reached'
-                    ];
-                    return false;
-                }
-                foreach ($val as $key => $value) {
-                    $type = gettype($value);
-                    if($type != 'integer'){
-                        $ret = [
-                            'message'=>"Value in position $key not is integer, only integer is valid",
-                            'expected'=>"[$key] = integer",
-                            'passed'=> "[$key] = $type"
-                        ];
-                        return false;
+    protected function beforeValidation($userData, string $ctx)
+    {
+        if(!isset($userData['ids'])){
+            $userData['ids'] = [];
+        };
+        return $userData;
+    }
+    protected function makeChecker($ctx): Validator{
+        $rules = [
+            'name'=>'required|string|min:3',
+            'ids'=>['bail','array','max:4',
+                function (string $attribute, mixed $value, Closure $fail){
+                    foreach ($value as $id) {
+                        if(!is_integer($id)){
+                            $fail("not all $attribute are integer");
+                        }
                     }
-                };
-                $idsInDb = DB::table('locations')->whereIn('id',$val)->get(['id']);
-                if($idsInDb->count() != $len){
-                    $ret = [
-                        'message'=>"not all ids is valid"
-                    ];
-                    return false;
                 }
-                return true;
-            });
-        return $checker;
+            ]
+        ];
+        
+        return $this->validator($rules);
     }
 }

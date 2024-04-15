@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\LocSenderResource;
 use App\Models\LocSender;
+use Illuminate\Validation\Validator;
 
 class LocSenderController extends ApiController{
     use GetDataInModel;
@@ -20,14 +21,13 @@ class LocSenderController extends ApiController{
         $resolver = new DbResolver;
         return $resolver;
     }
-    
-    protected function makeChecker(): Checker{
 
-        $checker = new Checker();
-        $checker->checkType('isFallback','boolean')->
-            checkType('location_id','integer')->
-            checkType('sender_id','integer')->optional('isFallback');
-        
-        return $checker;
+    protected function makeChecker($ctx): Validator{
+        $rules = [
+            'isFallback'=>'boolean',
+            'location_id'=>'required|numeric|integer',
+            'sender_id'=>'required|numeric|integer'
+        ];
+        return $this->validator($rules);
     }
 }

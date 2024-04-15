@@ -51,7 +51,7 @@ class TimeEventTest extends ApiCase{
             [
                 "model"=>$this->make(),
                 "send"=>["date"=>"2025-12-05 25:00:32"],
-                "expected"=>["BAD_REQUEST",["error"=>"invalid_data","property"=>"date"]]
+                "expected"=>["BAD_REQUEST"]
             ],
             [
                 "model"=>$this->make(),

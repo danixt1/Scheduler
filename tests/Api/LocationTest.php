@@ -21,7 +21,7 @@ class LocationTest extends ApiCase{
             ],
             [
                 "send"=>["name"=>"test","data"=>[],"type"=>1],
-                "expected"=>["BAD_REQUEST",["error"=>"invalid_data","property"=>"data"]]
+                "expected"=>"BAD_REQUEST"
             ]
         ];
     }

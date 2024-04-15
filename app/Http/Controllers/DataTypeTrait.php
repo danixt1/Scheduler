@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Http\DataType\DataTypesRules;
 use App\Http\DataType\DataTypesToDb;
+use App\Http\DataType\ExceptionTypeNotFound;
 use Illuminate\Validation\Validator;
 /**
  * Trait used by controller with data in pattern `data` classified by property `type`.
@@ -51,6 +52,9 @@ trait DataTypeTrait{
             try{
                 $validator->addRules(DataTypesRules::get(self::dataName(),$data['type']));
             }catch (\Throwable $e){
+                if(!is_a($e,ExceptionTypeNotFound::class)){
+                    throw $e;
+                }
                 //In case fail the rules defined gonna to show it on $validator->fails()
             }
         }

@@ -2,12 +2,9 @@
 
 namespace App\Http\DataType;
 
-use Error;
 use Illuminate\Validation\Rule;
 
-class DataTypesRules{
-    static private $methods_info = null;
-
+class DataTypesRules extends DataTypeBase{
     static protected function location_HttpRequestMode_1(){
         return [
             'data.u'=>'required|url:http,https',
@@ -22,28 +19,13 @@ class DataTypesRules{
             'data.description'=>'string|nullable'
         ];
     }
+
+    protected static function setValueInInfo(string $methodName, string $name, int $id): mixed{
+        return [self::class,$methodName]();
+    }
     public static function get(string $dataName,int $type){
-        if(!self::$methods_info){
-            self::$methods_info = [];
-            $methods = get_class_methods(self::class);
-            foreach($methods as $methodName){
-                $props = explode('_',$methodName);
-                if(count($props) != 3){
-                    continue;
-                }
-                [$name,,$id] = $props;
-                if(!isset(self::$methods_info[$name])){
-                    self::$methods_info[$name] = [];
-                }
-                self::$methods_info[$name][intval($id)] = [self::class,$methodName]();
-            }
-        }
-        if(!isset(self::$methods_info[$dataName])){
-            throw new Error("$dataName not exist");
-        }
-        if(!isset(self::$methods_info[$dataName][$type])){
-            throw new Error("type $type from $dataName not exist");
-        }
+        self::runGet();
+        self::verify($dataName,$type);
         return self::$methods_info[$dataName][$type];
     }
 }

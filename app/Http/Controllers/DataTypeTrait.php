@@ -48,7 +48,7 @@ trait DataTypeTrait{
     private function addRulesByTypes(Validator $validator,$addAfterFn = false){
         $data = $validator->getData();
         $rules = $validator->getRules();
-        if(isset($rules['data'])){
+        if(isset($rules['data']) && isset($data['type']) && is_int($data['type'])){
             try{
                 $validator->addRules(DataTypesRules::get(self::dataName(),$data['type']));
             }catch (\Throwable $e){

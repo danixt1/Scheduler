@@ -2,7 +2,7 @@
 
 namespace App\Http\DataType;
 
-abstract class DataTypeBase{
+trait DataTypeTrait{
     static protected $methods_info = null;
     abstract protected static function setValueInInfo(string $methodName,string $name,int $id):mixed;
     protected static function verify($dataName,$type){

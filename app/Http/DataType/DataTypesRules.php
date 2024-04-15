@@ -4,7 +4,8 @@ namespace App\Http\DataType;
 
 use Illuminate\Validation\Rule;
 
-class DataTypesRules extends DataTypeBase{
+class DataTypesRules{
+    use DataTypeTrait;
     static protected function location_HttpRequestMode_1(){
         return [
             'data.u'=>'required|url:http,https',

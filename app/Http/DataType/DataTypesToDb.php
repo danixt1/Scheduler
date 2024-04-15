@@ -1,11 +1,10 @@
 <?php
 namespace App\Http\DataType;
 use App\Http\Controllers\DbResolver;
-use Error;
 // On Adding new data transform to DB follow this rule in function name: <data_name>_<type_name>_<type_id>
 // This rule is used by the get method to run the function.
-class DataTypesToDb extends DataTypeBase{
-    static private $methods_info = null;
+class DataTypesToDb{
+    use DataTypeTrait;
     static protected function location_HttpRequestMode_1($data){
         return json_encode($data);
     }

@@ -29,13 +29,7 @@ abstract class ApiController extends Controller implements Icrud{
     private $userData = [];
     /** Store the actual context being used, actually support 2 ctxs: create/update */
     private $ctx = '';
-    protected $filterOnSend = [];
-    public function __construct(private $createProps,protected $resource){
-        $this->onGet = $this->setItem();
-        if(count($this->onGet) == 0){
-            $this->skipBuild = True;
-        }
-    }
+    public function __construct(private $createProps,protected $resource){}
     abstract static public function name():string;
     abstract static function toDb():DbResolver;
     abstract protected function data_all():Builder|\Illuminate\Database\Query\Builder;
@@ -144,18 +138,5 @@ abstract class ApiController extends Controller implements Icrud{
             return $this->response_not_found();
         }
         return response('',204);
-    }
-    protected function setItem(){
-        return [];
-    }
-    private function makeResponseFromCheckerArray(array $result){
-        $type = $result[0];
-        $args = array_slice($result,1);
-        $methodName = 'response_' . $type;
-        if(!$methodName){
-            throw new Exception("Unexpected error type passed By Checker class.\n
-            not exist response to error: $type");
-        }
-        return [$this,$methodName](...$args);
     }
 }

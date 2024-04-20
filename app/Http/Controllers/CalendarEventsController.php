@@ -18,7 +18,7 @@ class CalendarEventsController extends ApiController{
     protected $filterOnSend = ['sender_id','eventsdata_id'];
     protected $props = ['timeevents.id','date','eventsdata_id','sender_id','type','data'];
     function __construct(){
-        parent::__construct(['data','sender_id','date','type'],CalendarEventsResource::class);
+        parent::__construct(CalendarEventsResource::class);
     }
     static public function dataName(): string
     {

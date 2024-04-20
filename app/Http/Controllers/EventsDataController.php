@@ -11,10 +11,7 @@ class EventsDataController extends ApiController{
     use DataTypeTrait;
     protected string $model = EventsData::class;
     public function __construct(){
-        parent::__construct(
-            ['type','data'],
-            EventsDataResource::class
-        );
+        parent::__construct(EventsDataResource::class);
     }
     public static function dataName():string{
         return 'calendarEvent';

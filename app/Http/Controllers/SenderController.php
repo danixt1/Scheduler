@@ -13,7 +13,7 @@ class SenderController extends ApiController{
     use GetDataInModel;
     protected string $model = Sender::class;
     public function __construct(){
-        parent::__construct(['name','ids'],SenderResource::class);
+        parent::__construct(SenderResource::class);
     }
     static public function name(): string{
         return "Sender";

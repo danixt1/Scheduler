@@ -12,10 +12,7 @@ class TimeEventController extends ApiController{
     protected string $model = TimeEvents::class;
     protected $filterOnSend = ['eventsdata_id','sender_id'];
     public function __construct(){
-        parent::__construct(
-            ['date','eventsdata_id','sender_id'],
-            TimeEventResource::class
-        );
+        parent::__construct(TimeEventResource::class);
     }
     static public function name(): string{
         return "TimeEvent";

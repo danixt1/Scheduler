@@ -14,7 +14,7 @@ class LocationController extends ApiController{
     }
     protected string $model = Location::class;
     public function __construct(){
-        parent::__construct(['name','data','type'],LocationResource::class);
+        parent::__construct(LocationResource::class);
     }
     static public function name(): string{
         return "Location";

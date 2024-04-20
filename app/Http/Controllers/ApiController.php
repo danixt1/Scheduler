@@ -29,7 +29,7 @@ abstract class ApiController extends Controller implements Icrud{
     private $userData = [];
     /** Store the actual context being used, actually support 2 ctxs: create/update */
     private $ctx = '';
-    public function __construct(private $createProps,protected $resource){}
+    public function __construct(protected $resource){}
     abstract static public function name():string;
     abstract static function toDb():DbResolver;
     abstract protected function data_all():Builder|\Illuminate\Database\Query\Builder;

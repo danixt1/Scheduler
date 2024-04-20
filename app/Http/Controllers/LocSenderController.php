@@ -11,7 +11,7 @@ class LocSenderController extends ApiController{
     protected string $model = LocSender::class;
     protected $filterOnSend = ['location_id','sender_id'];
     public function __construct(){
-        parent::__construct(['isFallback','location_id','sender_id'],LocSenderResource::class);
+        parent::__construct(LocSenderResource::class);
     }
     static public function name(): string{
         return "LocSender";

@@ -6,7 +6,6 @@ use App\Events\Scheduler\Location\LocationBase;
 
 class Sender{
     private $fallbacks = [];
-    private $activatedLocs = [];
     private $fails = [];
     public function __construct(private LocationProcessorDTO $toTrigger, private EventData $ev){}
 
@@ -16,7 +15,6 @@ class Sender{
         };
         $loc = LocationBase::create($type, $isfallback, $data,$this->ev,$onFailure);
         if (!$isfallback) {
-            $this->activatedLocs[] = $loc;
             $this->toTrigger->add($loc);
             return;
         }
@@ -26,6 +24,8 @@ class Sender{
         return $this->ev->get();
     }
     public function afterProcessEnd(){
-        
+        if(count($this->fails)){
+            $this->toTrigger->add($this->fallbacks);
+        }
     }
 }

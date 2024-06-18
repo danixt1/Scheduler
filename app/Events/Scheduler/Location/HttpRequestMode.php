@@ -10,19 +10,17 @@ class HttpRequestMode extends LocationProcessor{
     private string $method;
     private string $url;
     private array $sendHeaders;
-    private array $data;
     private string $sendDataIn;
     private $client;
-    
+
     const DEF_HEADERS = [
         'User-Agent'=>'Scheduler'
     ];
 
-    public function __construct(bool $isFallback,string $data,EventData $evData,private \Closure $reporter){
+    public function __construct(bool $isFallback,string $data,private EventData $evData,private \Closure $reporter){
         $this->client = new \GuzzleHttp\Client();
         $data = json_decode($data);
         $this->url = $data->u;
-        $this->data = $evData->get();
 
         $this->unwrap_m($data);
         $this->unwrap_d($data);
@@ -39,13 +37,14 @@ class HttpRequestMode extends LocationProcessor{
         $headers = array_merge($this->sendHeaders,$this::DEF_HEADERS);
         $body = null;
         $query = '';
+        $data = $this->evData->get();
 
         if($dataMode == 'json'){
             $headers["Content-Type"] = "application/json";
-            $body = $this->data;
+            $body = $data;
         }
         if($dataMode == 'query'){
-            $query ='?'.http_build_query($this->data);
+            $query ='?'.http_build_query($data);
         }
 
         $request = new Request($this->method,$this->url . $query,$headers,$body ? json_encode($body) : null);

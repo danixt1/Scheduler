@@ -12,7 +12,7 @@ class LocationBase{
     ];
     protected function __construct(private bool $isFallback,private array $data){}
 
-    public static function create(int $type,bool $isFallback,string $locData,EventData $evData,Closure $reporter = function($e){}){
+    public static function create(int $type,bool $isFallback,string $locData,EventData $evData,Closure $reporter){
         if(!isset(self::TYPES[$type])){
             throw new \Error("Invalid type");
         };

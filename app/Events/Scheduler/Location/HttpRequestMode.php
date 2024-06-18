@@ -3,8 +3,6 @@ namespace App\Events\Scheduler\Location;
 
 use App\Events\Scheduler\EventData;
 use App\Events\Scheduler\ProcessResult;
-use GuzzleHttp\Exception\TransferException;
-use GuzzleHttp\Promise\Promise;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 
@@ -14,27 +12,29 @@ class HttpRequestMode extends LocationProcessor{
     private array $sendHeaders;
     private array $data;
     private string $sendDataIn;
-
+    private $client;
+    
     const DEF_HEADERS = [
         'User-Agent'=>'Scheduler'
     ];
 
     public function __construct(bool $isFallback,string $data,EventData $evData,private \Closure $reporter){
+        $this->client = new \GuzzleHttp\Client();
         $data = json_decode($data);
-        $this->url = $data['u'];
-        $this->data = $evData;
+        $this->url = $data->u;
+        $this->data = $evData->get();
 
         $this->unwrap_m($data);
         $this->unwrap_d($data);
         $this->unwrap_h($data);
 
-        parent::__construct($isFallback,$data,$reporter);
+        parent::__construct($isFallback,(array)$data,$reporter);
     }
     public function isAsync(): bool{
         return true;
     }
-    public function run(): ProcessResult | Promise{
-        $client = new \GuzzleHttp\Client();
+    public function run():\GuzzleHttp\Promise\Promise{
+        $client = $this->client;
         $dataMode = $this->sendDataIn;
         $headers = array_merge($this->sendHeaders,$this::DEF_HEADERS);
         $body = null;
@@ -48,7 +48,7 @@ class HttpRequestMode extends LocationProcessor{
             $query ='?'.http_build_query($this->data);
         }
 
-        $request = new Request($this->method,$this->url + $query,$headers,$body);
+        $request = new Request($this->method,$this->url . $query,$headers,$body ? json_encode($body) : null);
 
         $prms = $client->sendAsync($request,["timeout"=>0.5]);
         $prms->then(function(Response $response){
@@ -72,7 +72,7 @@ class HttpRequestMode extends LocationProcessor{
             $this->finish(new ProcessResult($errorCode,$msg));
 
         },function($e){
-            if($e instanceof TransferException){
+            if($e instanceof \GuzzleHttp\Exception\TransferException){
                 $this->finish(new ProcessResult(2,"timeout"));
                 return;
             }
@@ -80,14 +80,16 @@ class HttpRequestMode extends LocationProcessor{
         });
         return $prms;
     }
-    
+    public function setClient(\GuzzleHttp\Client $client){
+        $this->client = $client;
+    }
     private function unwrap_h(&$data){
-        $this->sendHeaders = isset($data['h']) ? (array)$data['h'] : [];
+        $this->sendHeaders = isset($data->h) ? (array)$data->h : [];
     }
     private function unwrap_m(&$data){
-        $this->method = isset($data['m']) ? $data['m'] : 'GET';
+        $this->method = isset($data->m) ? $data->m : 'GET';
     }
     private function unwrap_d(&$data){
-        $this->sendDataIn = (isset($data['d']) ? $data['d'] : 'default') == 'default' ? ($this->method == 'POST' ? 'json' : 'query') : $data['d'];
+        $this->sendDataIn = (isset($data->d) ? $data->d : 'default') == 'default' ? ($this->method == 'POST' ? 'json' : 'query') : $data->d;
     }
 }

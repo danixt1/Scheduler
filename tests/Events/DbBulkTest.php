@@ -5,7 +5,7 @@ use App\Events\Scheduler\DbBulk;
 use App\Models\EventsData;
 use App\Models\Location;
 
-class SchedulerTest extends \Tests\TestCase{
+class DbBulkTest extends \Tests\TestCase{
     use \Illuminate\Foundation\Testing\RefreshDatabase;
     private static function datasetInsert(){
         $hidden = ["id",'created_at','updated_at'];

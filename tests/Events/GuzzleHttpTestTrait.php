@@ -20,4 +20,5 @@ trait GuzzleHttpTestTrait{
             throw new AssertionFailedError("Not Sended expected request: ".$url);
         }
     }
+    
 }

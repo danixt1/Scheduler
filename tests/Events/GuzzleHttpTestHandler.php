@@ -7,7 +7,7 @@ use GuzzleHttp\Psr7\Response;
 class GuzzleHttpTestHandler{
     private $locs = [];
     private $nonExplicitLocations = [];
-    private $calledUrls = [];
+    private $urlWithRequestList = [];
     private $count = 0;
     public function __construct($autoDefineClient = true,private $defReturn = new Response){
         if($autoDefineClient){
@@ -25,9 +25,9 @@ class GuzzleHttpTestHandler{
             $response = $modes[$response];
         };
         if(!$response){
-            $response = $modes["success"];
+            $response = new Response;
         }
-        $locs[$url] = $response;
+        $this->locs[$url] = $response;
     }
     public function __invoke(\Psr\Http\Message\RequestInterface $requestInterface,array $options){
         $fullUrl = "".$requestInterface->getUri();
@@ -45,7 +45,7 @@ class GuzzleHttpTestHandler{
     }
     public function getRequestsFromUrl($url){
         $reqs = [];
-        foreach ($this->calledUrls as $value) {
+        foreach ($this->urlWithRequestList as $value) {
             $actUrl = $value[0];
             if($this->checkString($url,$actUrl)){
                 $reqs[] = $value[1];
@@ -53,21 +53,22 @@ class GuzzleHttpTestHandler{
         }
         return $reqs;
     }
+    public function getAllRequests(){
+        return array_map(function(array $urlAndRequest){return $urlAndRequest[1];},$this->urlWithRequestList);
+    }
     private function checkString($from,$compareTo){
         if(str_starts_with($from,"/") && preg_match($from,$compareTo)){
             return true;
-        }
-        if($from == $compareTo){
-            return true;
-        }
-        return false;
+        };
+        $from ="/" . str_replace([".","/","*","?"],["\\.","\/",".*","\?"],$from) . "/";
+        return preg_match($from,$compareTo);
     }
     private function activateResponseData($data,$request,$url){
         $response = $data;
         if(is_callable($data)){
             $response = $data($request);
         }
-        $this->calledUrls[] = [$url,$request];
+        $this->urlWithRequestList[] = [$url,$request];
         return $this->getTypePromise($response);
     }
     private function getTypePromise($response){

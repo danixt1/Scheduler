@@ -16,15 +16,14 @@ class Runner extends Runnable{
     public function run(): bool{
         $eventsQuery = self::runQuery(new DateTime('now'));
         if(count($eventsQuery) == 0){
-            return;
+            return true;
         }
         $bulk = new DbBulk;
         $senderBuilder = new SenderBuilder;
         $eventsData = [];
         foreach($eventsQuery as $query){
             $evData = isset($eventsData[$query->event_id]) ? $eventsData[$query->event_id] : new EventData($query->event_id,$query->eventType,$bulk,$query->eventData);
-
-            if(isset($eventsData[$query->event_id]))
+            
             $sender = $senderBuilder->buildSender($evData,$query->sender_id);
             $sender->buildLocation($query->locType,$query->isFallback,$query->locData);
         }

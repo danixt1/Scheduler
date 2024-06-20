@@ -7,6 +7,7 @@ use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 
 class HttpRequestMode extends LocationProcessor{
+    private static $defClient = null;
     private string $method;
     private string $url;
     private array $sendHeaders;
@@ -18,7 +19,7 @@ class HttpRequestMode extends LocationProcessor{
     ];
 
     public function __construct(bool $isFallback,string $data,private EventData $evData,private \Closure $reporter){
-        $this->client = new \GuzzleHttp\Client();
+        $this->client =self::$defClient ?? new \GuzzleHttp\Client();
         $data = json_decode($data);
         $this->url = $data->u;
 
@@ -31,7 +32,7 @@ class HttpRequestMode extends LocationProcessor{
     public function isAsync(): bool{
         return true;
     }
-    public function run():\GuzzleHttp\Promise\Promise{
+    public function run():\GuzzleHttp\Promise\PromiseInterface{
         $client = $this->client;
         $dataMode = $this->sendDataIn;
         $headers = array_merge($this->sendHeaders,$this::DEF_HEADERS);
@@ -81,6 +82,9 @@ class HttpRequestMode extends LocationProcessor{
     }
     public function setClient(\GuzzleHttp\Client $client){
         $this->client = $client;
+    }
+    public static function setDefaultClient(\GuzzleHttp\Client $client){
+        self::$defClient = $client;
     }
     private function unwrap_h(&$data){
         $this->sendHeaders = isset($data->h) ? (array)$data->h : [];

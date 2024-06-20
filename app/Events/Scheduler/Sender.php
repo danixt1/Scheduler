@@ -7,6 +7,7 @@ use App\Events\Scheduler\Location\LocationBase;
 class Sender{
     private $fallbacks = [];
     private $fails = [];
+    private $haveFallbacksSended = false;
     public function __construct(private LocationProcessorDTO $toTrigger, private EventData $ev){}
 
     public function buildLocation(int $type, bool $isfallback, string $data){
@@ -24,7 +25,8 @@ class Sender{
         return $this->ev->get();
     }
     public function afterProcessEnd(){
-        if(count($this->fails)){
+        if(!$this->haveFallbacksSended && count($this->fails)){
+            $this->haveFallbacksSended = true;
             $this->toTrigger->add($this->fallbacks);
         }
     }

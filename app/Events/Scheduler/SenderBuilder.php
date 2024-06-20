@@ -14,7 +14,7 @@ class SenderBuilder{
         }
         $sender = new Sender($this->dto,$ev);
         if($id != null){
-            $senders[$id] = $sender;
+            $this->senders[$id] = $sender;
         }
         return $sender;
     }
@@ -27,13 +27,19 @@ class SenderBuilder{
         foreach ($locs as $loc) {
             if($loc->isAsync()){
                 $promises[] = $loc->run();
-                return;
+                continue;
             }
             $nonAsync[] = $loc;
         };
         \GuzzleHttp\Promise\Utils::settle($promises)->wait();
         foreach($nonAsync as $runner){
             $runner->run();
+        }
+        foreach($this->senders as $sender){
+            $sender->afterProcessEnd();
+        }
+        if(count($this->dto->getLocations()) > 0){
+            $this->fireAllLocations();
         }
     }
 }

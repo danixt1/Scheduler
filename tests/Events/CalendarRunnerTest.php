@@ -15,51 +15,52 @@ class CalendarRunnerTest extends \Tests\TestCase{
     use \Illuminate\Foundation\Testing\RefreshDatabase;
     use GuzzleHttpTestTrait;
 
-    private function createLocation($port = 8000,$method = "GET"){
-        $location =Location::factory()->create(["type"=>1,"data"=>json_encode(["u"=>"http://localhost:".$port,"m"=>$method])]);
-        return [$location,"http://localhost:".$port.($method == 'GET' ? "*" : "")];
-    }
-    private function createLocSender($location,$sender,$isFallback = false){
+    private function createLocationAndLinktoSender(Sender $sender,$isFallback =false){
+        $location =Location::factory()->post()->create(["type"=>1]);
+        $url = json_decode($location->data)->u;
         LocSender::factory()->for($location)->for($sender)->create(["isFallback"=>$isFallback]);
+        return $url;
     }
     private function dateTimeNowModif($modif){
         $time = new \DateTime('now');
-        $time->modify($modif);
+        if(!$time->modify($modif)){
+            throw new \Error("Invalid modify");
+        }
         return $time;
     }
-    private function createTimeEvent(DateTime $time,$sender,$eventsData = null){
+    private function createTimeEvent(DateTime|string $time,$sender,$eventsData = null){
+        if(is_string($time)){
+            $time = $this->dateTimeNowModif($time);
+        };
         return TimeEvents::factory()
         ->for($eventsData ?? EventsData::factory()->create())
         ->for($sender)
         ->create(["date"=>$time->format(DB_DATETIME_PATTERN)]);
     }
     public function test_fire_single_event(){
-        $sender = Sender::factory()->create();
-
-        [$location,$url] = $this->createLocation();
-        [$callback,$url2] = $this->createLocation(7000);
-
-        $this->createLocSender($location,$sender);
-        $this->createLocSender($callback,$sender,true);
-
-        $time = $this->dateTimeNowModif('-1 second');
-        $timeEvent = $this->createTimeEvent($time,$sender);
         $handler = new GuzzleHttpTestHandler();
 
-        (new Runner)->run();
+        $sender = Sender::factory()->create();
 
+        $url = $this->createLocationAndLinktoSender($sender);
+        $url2 = $this->createLocationAndLinktoSender($sender,true);
+
+        $timeEvent = $this->createTimeEvent('-1 second',$sender);
+
+        (new Runner)->run();
+        
         $this->assertModelMissing($timeEvent);
         $this->assertSendedRequestTo($handler,$url);
         $this->assertNotSendedRequestTo($handler,$url2);
     }
     public function test_not_fire_event(){
-        $time = $this->dateTimeNowModif('+1 second');
+        $handler = new GuzzleHttpTestHandler();
 
         $sender = Sender::factory()->create();
-        [$location,$url] = $this->createLocation();
-        $this->createLocSender($location,$sender);
-        $timeEvent = $this->createTimeEvent($time,$sender);
-        $handler = new GuzzleHttpTestHandler();
+
+        $url = $this->createLocationAndLinktoSender($sender);
+
+        $timeEvent = $this->createTimeEvent('+1 second',$sender);
 
         (new Runner)->run();
 
@@ -67,23 +68,22 @@ class CalendarRunnerTest extends \Tests\TestCase{
         $this->assertNotSendedRequestTo($handler,$url);
     }
     public function test_call_callback_after_fail(){
-        $time = $this->dateTimeNowModif('-1 second');
+        $handler = new GuzzleHttpTestHandler();
 
         $sender = Sender::factory()->create();
-        [$location,$url] = $this->createLocation();
-        [$callback,$url2] = $this->createLocation(7000);
 
-        $this->createLocSender($location,$sender);
-        $this->createLocSender($callback,$sender,true);
+        $url = $this->createLocationAndLinktoSender($sender);
+        $url2 = $this->createLocationAndLinktoSender($sender,true);
 
-        $timeEvent = $this->createTimeEvent($time,$sender);
-        $handler = new GuzzleHttpTestHandler();
         $handler->add($url,new Response(400));
 
-        (new Runner)->run();
+        $timeEvent = $this->createTimeEvent('-1 second',$sender);
 
+        (new Runner)->run();
+        
         $this->assertModelMissing($timeEvent);
         $this->assertSendedRequestTo($handler,$url);
         $this->assertSendedRequestTo($handler,$url2);
     }
+
 }

@@ -10,6 +10,7 @@ use App\Models\Sender;
 use App\Models\TimeEvents;
 use DateTime;
 use GuzzleHttp\Psr7\Response;
+use PHPUnit\Framework\AssertionFailedError;
 
 class CalendarRunnerTest extends \Tests\TestCase{
     use \Illuminate\Foundation\Testing\RefreshDatabase;
@@ -84,6 +85,43 @@ class CalendarRunnerTest extends \Tests\TestCase{
         $this->assertModelMissing($timeEvent);
         $this->assertSendedRequestTo($handler,$url);
         $this->assertSendedRequestTo($handler,$url2);
+    }
+    public function test_fire_many_events(){
+        $this->refreshDatabase();
+        $handler = new GuzzleHttpTestHandler();
+        $reqs = [
+            [true,0],
+            [true,0],
+            [false,1],
+            [true,1],
+            [false,0],
+            [true,1]
+        ];
+        $sendersQuant = array_reduce($reqs,fn($prev,$act)=>$act[1] > $prev ? $act[1] : $prev,-1);
+        $senders = Sender::factory()->count($sendersQuant + 1)->create()->all();
+        $tests = [];
+        $eventsDatas = EventsData::factory()->count(count($reqs))->create();
+        foreach ($reqs as $value) {
+            [$active,$linkToSender] = $value;
+            $sender = $senders[$linkToSender];
+            $this->createLocationAndLinktoSender($sender);
+            $timeEvent = $this->createTimeEvent(($active ? '-' : '+') .'1 second' ,$sender,$eventsDatas->pop());
+            $tests[] = [$active,$timeEvent];
+        }  
+
+        (new Runner)->run();
+        foreach($tests as $key =>$test){
+            try{
+                [$active,$timeEvent] = $test;
+                if($active){
+                    $this->assertModelMissing($timeEvent);
+                    continue;
+                }
+                $this->assertModelExists($timeEvent);
+            }catch(AssertionFailedError $e){
+                throw new AssertionFailedError("Failed ID $key message:\n{$e->getMessage()}");
+            }
+        }
     }
 
 }

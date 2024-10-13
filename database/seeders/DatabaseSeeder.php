@@ -2,9 +2,6 @@
 
 namespace Database\Seeders;
 
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-
-use App\Classes\TimeEvent;
 use Illuminate\Database\Seeder;
 
 use App\Models\Location;
@@ -14,7 +11,6 @@ use App\Models\LocSender;
 use App\Models\TimeEvents;
 use App\Models\EventsData;
 
-use Illuminate\Database\Eloquent\Collection;
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -26,16 +22,12 @@ class DatabaseSeeder extends Seeder
 
         $uniqueEvents = EventsData::factory()->count(10)->create();
 
-        //$locsSenders = new Collection();
-        //$timeEvents = new Collection();
         foreach($locs as $loc){
-            $locSender = LocSender::factory()->count(1)->for($loc)->for($sender->random())->create();
-            //$locsSenders->push($locSender);
+            LocSender::factory()->count(1)->for($loc)->for($sender->random())->create();
         };
 
         foreach($uniqueEvents as $ev){
-            $timeEvent = TimeEvents::factory()->count(1)->for($ev)->for($sender->random())->create();
-            //$timeEvents->push($timeEvent);
+            TimeEvents::factory()->count(1)->for($ev)->for($sender->random())->create();
         }
     }
 }

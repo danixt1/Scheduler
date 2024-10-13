@@ -4,7 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use App\Classes\TimeEvent;
+use App\Events\Scheduler\Runner;
 use Illuminate\Support\Facades\Log;
 class Kernel extends ConsoleKernel
 {
@@ -15,9 +15,8 @@ class Kernel extends ConsoleKernel
     {
         $schedule->call(function(){
             Log::info('Scheduler:Starting check of events to fire');
-            $result =  TimeEvent::extractFromDb();
-            Log::info('Schedluler:finished',['results'=>$result]);
-            
+            $runner =new Runner;
+            $runner->run();
         })->everyMinute()->name('check fired events')->onOneServer();
     }
 

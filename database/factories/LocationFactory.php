@@ -30,7 +30,7 @@ class LocationFactory extends Factory
             case 1:
                 $name =fake()->randomElement(['email request','SAP endpoint','message app endpoint']);
                 $data = [
-                    'u'=>'http://localhost:'.fake()->randomElement(['8999','8998','8951']),
+                    'u'=>fake()->url(),
                     'm'=>fake()->randomElement(['GET','POST','DELETE']),
                     'h'=>["Auth"=>"46070d4bf934fb0d4b06d9e2c46e346944e322444900a435d7d9a95e6d7435f5"]
                 ];
@@ -41,5 +41,18 @@ class LocationFactory extends Factory
             'data'=>json_encode($data),
             'type'=>$type
         ];
+    }
+    public function post():Factory{
+        return $this->state(function(array $attts){
+            $type = $attts["type"];
+            $data = [
+                'u'=>fake()->url(),
+                'm'=>'POST',
+                'h'=>["Auth"=>"46070d4bf934fb0d4b06d9e2c46e346944e322444900a435d7d9a95e6d7435f5"]
+            ];
+            return [
+                "data"=>json_encode($data)
+            ];
+        });
     }
 }

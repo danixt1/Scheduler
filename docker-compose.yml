@@ -1,57 +1,37 @@
-version: '3'
 services:
-    laravel.test:
-        build:
-            context: ./vendor/laravel/sail/runtimes/8.2
-            dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: sail-8.2/app
-        extra_hosts:
-            - 'host.docker.internal:host-gateway'
+    laravel:
         ports:
-            - '${APP_PORT:-80}:80'
-            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
-        environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            - "8000:8000"
+        build:
+            context: .
+            dockerfile: Dockerfile
         volumes:
-            - '.:/var/www/html'
-        networks:
-            - sail
+            - .:/var/www/html
+        environment:
+            - DB_CONNECTION=${DB_CONNECTION:-pgsql}
+            - DB_DATABASE=${DB_DATABASE:-laravel}
+            - DB_USERNAME=${DB_USERNAME:-dev}
+            - DB_PASSWORD=${DB_PASSWORD:-dev}
+            - DB_HOST=${DB_HOST:-pgsql}
+            - APP_ENV=${APP_ENV:-local}
+            - APP_DEBUG=${APP_DEBUG:-true}
         depends_on:
             - pgsql
     pgsql:
-        image: 'postgres:15'
-        ports:
-            - '${FORWARD_DB_PORT:-5432}:5432'
+        image: 'postgres:17-alpine'
+        expose:
+            - 5432
+
         environment:
-            PGPASSWORD: '${DB_PASSWORD:-secret}'
-            POSTGRES_DB: '${DB_DATABASE}'
-            POSTGRES_USER: '${DB_USERNAME}'
-            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+            POSTGRES_DB: '${DB_DATABASE:-laravel}'
+            POSTGRES_USER: '${DB_USERNAME:-dev}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-dev}'
         volumes:
-            - 'sail-pgsql:/var/lib/postgresql/data'
-            - './vendor/laravel/sail/database/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
-        networks:
-            - sail
+            - pgdata:/var/lib/postgresql/data
         healthcheck:
-            test:
-                - CMD
-                - pg_isready
-                - '-q'
-                - '-d'
-                - '${DB_DATABASE}'
-                - '-U'
-                - '${DB_USERNAME}'
+            test: ["CMD", "pg_isready", "-q", "-d", "${DB_DATABASE:-laravel}", "-U", "${DB_USERNAME:-dev}"]
             retries: 3
             timeout: 5s
-networks:
-    sail:
-        driver: bridge
 volumes:
-    sail-pgsql:
-        driver: local
+  pgdata:
+    driver: local

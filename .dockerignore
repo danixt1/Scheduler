@@ -1,0 +1,6 @@
+.git
+.vscode
+vendor/
+node_modules/
+public/storage
+storage/*.key

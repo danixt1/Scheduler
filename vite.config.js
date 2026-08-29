@@ -16,5 +16,12 @@ export default defineConfig({
         globals:true,
         environment:'jsdom',
         setupFiles:'./resources/ts/tests/setup.ts'
+    },
+    server:{
+        host:'0.0.0.0',
+        port:5173,
+        hmr:{
+            host:'localhost'
+        }
     }
 });

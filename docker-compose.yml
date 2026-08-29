@@ -2,21 +2,29 @@ services:
     laravel:
         ports:
             - "8000:8000"
-        build:
-            context: .
-            dockerfile: Dockerfile
+        build: .
         volumes:
             - .:/var/www/html
         environment:
             - DB_CONNECTION=${DB_CONNECTION:-pgsql}
             - DB_DATABASE=${DB_DATABASE:-laravel}
+            - DB_PORT=${DB_PORT:-5432}
             - DB_USERNAME=${DB_USERNAME:-dev}
             - DB_PASSWORD=${DB_PASSWORD:-dev}
             - DB_HOST=${DB_HOST:-pgsql}
             - APP_ENV=${APP_ENV:-local}
             - APP_DEBUG=${APP_DEBUG:-true}
+            - XDEBUG_MODE=${XDEBUG_MODE:-off}
         depends_on:
             - pgsql
+    node:
+        image: node:20-alpine
+        working_dir: /var/www/html
+        ports:
+            - "5173:5173"
+        volumes:
+            - .:/var/www/html
+        command: npm run dev
     pgsql:
         image: 'postgres:17-alpine'
         expose:

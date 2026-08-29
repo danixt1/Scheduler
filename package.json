@@ -2,7 +2,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "dev": "node dev",
+        "dev": "vite dev",
         "build": "vite build",
         "test": "vitest --run"
     },
@@ -27,6 +27,7 @@
         "react-dom": "^18.2.0",
         "react-hook-form": "^7.45.4",
         "reactjs-popup": "^2.0.6",
+        "typescript": "^5.9.2",
         "vite": "^4.4.9"
     }
 }

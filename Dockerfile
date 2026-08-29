@@ -36,4 +36,6 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 8000 
-CMD ["php", "artisan", "serve","--host=0.0.0.0","--port=8000"]
+
+# Avoid losing enviroment on init of child PHP web-server
+CMD ["sh", "-c", "cd public && exec php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]

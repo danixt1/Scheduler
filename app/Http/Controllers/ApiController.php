@@ -6,9 +6,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
 
@@ -102,16 +100,7 @@ abstract class ApiController extends Controller implements Icrud{
             return $this->response_multi_invalid_properties($validator->errors()->all());
         }
         $passData = $this::toDb()->resolve($validator->validated());
-        try{
-            $info =$this->data_create($passData);
-        }catch(QueryException $e){
-            if($e->getCode() === "23000"){
-                Log::info($e->getMessage());
-                return $this->response_invalid_foreign_key($e->getMessage());
-            }
-            Log::critical($e->getMessage());
-            return response('',500);
-        }
+        $info =$this->data_create($passData);
         return response($info,201);
     }
     function update(Request $request,string $item):Response{
@@ -124,16 +113,7 @@ abstract class ApiController extends Controller implements Icrud{
         }
 
         $setData = $this::toDb()->resolve($validator->validated());
-        try {
-            $val =$this->data_update($item,$setData);
-        } catch (QueryException $e) {
-            if($e->getCode() === "23000"){
-                Log::info($e->getMessage());
-                return $this->response_invalid_foreign_key($e->getMessage());
-            }
-            Log::critical($e->getMessage());
-            return response('',500);
-        }
+        $val =$this->data_update($item,$setData);
         if($val == 0){
             return $this->response_not_found();
         }
